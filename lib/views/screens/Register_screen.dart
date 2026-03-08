@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../ui/TextFieldUI.dart';
-
+import '/../controllers/auth_controller.dart';
+import '/../providers/auth_provider.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -17,6 +19,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscurePassword = true;
   int _selectedTab = 1; // 0 = Connexion, 1 = Inscription
 
+  final AuthController _authController = AuthController();
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -27,177 +31,190 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        body: Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFE0C3FC), Color(0xFFF5F5F5), Color(0xFFD5D5D5)],
-            ),
+    final authProvider = Provider.of<AuthProvider>(context);
+
+    return Scaffold(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFE0C3FC), Color(0xFFF5F5F5), Color(0xFFD5D5D5)],
           ),
-          child: SafeArea(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  const SizedBox(height: 16),
-                  // Title
-                  const Text(
-                    'Application de gestion des ...',
-                    style: TextStyle(fontSize: 14, color: Colors.black54),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                const SizedBox(height: 16),
+                const Text(
+                  'Application de gestion des ...',
+                  style: TextStyle(fontSize: 14, color: Colors.black54),
+                ),
+                const SizedBox(height: 30),
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF7B2FF7), Color(0xFFAB47BC)],
+                    ),
                   ),
-                  const SizedBox(height: 30),
-                  // Logo
-                  Container(
-                    width: 80,
-                    height: 80,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.asset('images/icon.png', fit: BoxFit.cover),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'DEVMOB',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF3A1078),
+                  ),
+                ),
+                const Text(
+                  'Gestion de Repas',
+                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                ),
+                const SizedBox(height: 30),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xFF7B2FF7), Color(0xFFAB47BC)],
-                      ),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: Image.asset('images/icon.png', fit: BoxFit.cover),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'DEVMOB',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF3A1078),
-                    ),
-                  ),
-                  const Text(
-                    'Gestion de Repas',
-                    style: TextStyle(fontSize: 13, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 30),
-                  // Card
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Tabs
-                          _buildTabs(),
-                          const SizedBox(height: 24),
-                          // Email
-                          TextFieldUI(
-                            controller: _emailController,
-                            label: 'Email',
-                            hint: 'votre@email.com',
-                            icon: Icons.email_outlined,
-                          ),
-                          const SizedBox(height: 16),
-                          // Password
-                          TextFieldUI(
-                            controller: _passwordController,
-                            label: 'Mot de passe',
-                            hint: '••••••••',
-                            icon: Icons.lock_outline,
-                            obscureText: _obscurePassword,
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_off_outlined
-                                    : Icons.visibility_outlined,
-                                color: Colors.grey,
-                                size: 20,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildTabs(),
+                        const SizedBox(height: 24),
+                        TextFieldUI(
+                          controller: _emailController,
+                          label: 'Email',
+                          hint: 'votre@email.com',
+                          icon: Icons.email_outlined,
+                        ),
+                        const SizedBox(height: 16),
+                        TextFieldUI(
+                          controller: _passwordController,
+                          label: 'Mot de passe',
+                          hint: '••••••••',
+                          icon: Icons.lock_outline,
+                          obscureText: _obscurePassword,
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                              color: Colors.grey,
+                              size: 20,
                             ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
                           ),
-                          const SizedBox(height: 16),
-                          // Confirm Password
-                          TextFieldUI(
-                            controller: _confirmPasswordController,
-                            label: 'Confirmer le mot de passe',
-                            hint: '••••••••',
-                            icon: Icons.lock_outline,
-                            obscureText: true,
-                          ),
-                          const SizedBox(height: 28),
-                          // Button
-                          SizedBox(
-                            width: double.infinity,
-                            height: 50,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
+                        ),
+                        const SizedBox(height: 16),
+                        TextFieldUI(
+                          controller: _confirmPasswordController,
+                          label: 'Confirmer le mot de passe',
+                          hint: '••••••••',
+                          icon: Icons.lock_outline,
+                          obscureText: true,
+                        ),
+                        const SizedBox(height: 28),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton(
+                            onPressed: authProvider.isLoading
+                                ? null
+                                : () async {
+                                    authProvider.clearError();
+
+                                    // Check password confirmation
+                                    if (_passwordController.text.trim() !=
+                                        _confirmPasswordController.text.trim()) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                              'Les mots de passe ne correspondent pas'),
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+                                    // Call controller to register
+                                    await _authController.signUp(
+                                      _emailController.text.trim(),
+                                      _passwordController.text.trim(),
+                                      authProvider,
+                                    );
+
+                                    if (authProvider.isLoggedIn) {
+                                      Navigator.pushReplacementNamed(
+                                          context, '/home');
+                                    } else if (authProvider.error.isNotEmpty) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(authProvider.error),
+                                        ),
+                                      );
+                                    }
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(25),
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFFE040FB),
-                                    Color(0xFF7C4DFF),
-                                  ],
-                                ),
                               ),
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  // TODO: handle register
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.transparent,
-                                  shadowColor: Colors.transparent,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(25),
-                                  ),
-                                ),
-                                child: const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.person_add_outlined,
-                                      color: Colors.white,
-                                      size: 20,
-                                    ),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      'Créer un compte',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                              backgroundColor: const Color(0xFF7C4DFF),
                             ),
+                            child: authProvider.isLoading
+                                ? const CircularProgressIndicator(
+                                    color: Colors.white,
+                                  )
+                                : const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.person_add_outlined,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Créer un compte',
+                                        style: TextStyle(
+                                            color: Colors.white, fontSize: 16),
+                                      ),
+                                    ],
+                                  ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 30),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -224,7 +241,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       child: GestureDetector(
         onTap: () {
           if (index == 0) {
-            Navigator.pushNamed(context, '/login');
+            Navigator.pushReplacementNamed(context, '/login');
           } else {
             setState(() => _selectedTab = index);
           }
