@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "625392351187",
+    "project_id": "mekilti-3670a",
+    "storage_bucket": "mekilti-3670a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:625392351187:android:b89aeecfb3d60dd0ef2126",
+        "android_client_info": {
+          "package_name": "com.example.gestionrepas"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDwjQMNHpTREFIy3ukEt3C1vQzYC-vgOCo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
