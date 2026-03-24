@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../views/screens/Login_screen.dart';
-import '../views/screens/Register_screen.dart';
-import '../views/screens/home_screen.dart';
+import '../views/Auth/RegisterPage .dart';
+import '../views/Auth/LoginPage.dart';
+import '../views/Home/main_screen.dart';
+
 
 
 class AppRoutes {
@@ -16,8 +17,7 @@ class AppRoutes {
     return {
       login: (context) => const LoginScreen(),
       register: (context) => const RegisterScreen(),
-      home: (context) => const HomeScreen(),
-  
+      home: (context) => const MainNavigation(),
     };
   }
 
