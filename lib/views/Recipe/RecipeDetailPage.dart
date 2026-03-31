@@ -11,7 +11,6 @@ class RecipeDetailPage extends StatefulWidget {
 
 class _RecipeDetailPageState extends State<RecipeDetailPage> {
   late Map<String, dynamic> _recipe;
-  bool _isFavorite = false;
 
   @override
   void initState() {
@@ -21,188 +20,259 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
 
   Map<String, dynamic> _getDefaultRecipe() {
     return {
-      'id': 1,
       'name': 'Salade Césair',
       'time': '15 min',
       'servings': '2',
       'difficulty': 'Facile',
       'color': const Color(0xFF3B82F6),
       'category': 'Déjeuner',
-      'description':
-          'Une délicieuse salade française avec des croûtons et du parmesan.',
-      'ingredients': [
-        '1 laitue romaine',
-        '50g de parmesan',
-        '100g de croûtons',
-        '2 œufs durs',
-        '100ml de sauce Césair',
-        'Sel et poivre',
-      ],
-      'instructions': [
-        'Lavez et déchirez la laitue',
-        'Préparez les croûtons',
-        'Cuisez les œufs durs',
-        'Mélangez tous les ingrédients',
-        'Versez la sauce et servez',
-      ],
+      'ingredients': ['Laitue', 'Parmesan', 'Croûtons', 'Œufs'],
+      'instructions': ['Préparer les ingrédients', 'Mélanger', 'Servir'],
     };
+  }
+
+  void _deleteRecipe() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('Supprimer la recette'),
+        content: Text(
+          'Êtes-vous sûr de vouloir supprimer "${_recipe['name']}" ?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Fermer le dialog
+              Navigator.pop(context); // Retour à la page précédente
+            },
+            child: const Text('Supprimer', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF7C3AED),
-        title: const Text(
-          'Détail de la Recette',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: false,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: Icon(
-              _isFavorite ? Icons.favorite : Icons.favorite_border,
-              color: Colors.white,
-            ),
-            onPressed: () => setState(() => _isFavorite = !_isFavorite),
+      body: Container(
+        // 🔥 GRADIENT MODERNE
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF4A6CFF), Color(0xFF8A2BE2), Color(0xFFFF1493)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            _buildInfoBar(),
-            _buildSection('Ingrédients', _buildIngredientsList()),
-            _buildSection('Instructions', _buildInstructionsList()),
-            _buildSection('Nutrition', _buildNutritionInfo()),
-            const SizedBox(height: 20),
-          ],
+        ),
+
+        child: SafeArea(
+          child: Column(
+            children: [
+              // 🔥 HEADER
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    ),
+                    const Expanded(
+                      child: Text(
+                        'Détails Recette',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_forever, color: Colors.red),
+                      onPressed: _deleteRecipe,
+                    ),
+                  ],
+                ),
+              ),
+
+              // 🔥 CONTENU
+              Expanded(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(28),
+                      topRight: Radius.circular(28),
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        // 🔥 CARD HEADER
+                        _buildHeaderCard(),
+
+                        const SizedBox(height: 20),
+
+                        _buildSection(
+                          'Ingrédients',
+                          Icons.shopping_basket,
+                          Colors.orange,
+                          _buildIngredients(),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        _buildSection(
+                          'Instructions',
+                          Icons.menu_book,
+                          Colors.purple,
+                          _buildInstructions(),
+                        ),
+
+                        const SizedBox(height: 80),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      bottomNavigationBar: _buildActionButtons(),
+
+      // 🔥 BOUTONS BAS
+      bottomNavigationBar: _buildButtons(),
     );
   }
 
-  Widget _buildHeader() {
+  // 🔥 CARD PRINCIPALE
+  Widget _buildHeaderCard() {
     return Container(
-      height: 200,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [_recipe['color'].withOpacity(0.7), _recipe['color']],
-        ),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+        ],
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 100,
-            height: 100,
+            width: 80,
+            height: 80,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              gradient: LinearGradient(
+                colors: [_recipe['color'].withOpacity(0.7), _recipe['color']],
+              ),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Icon(Icons.restaurant, size: 50, color: Colors.white),
+            child: const Icon(Icons.restaurant, color: Colors.white, size: 40),
           ),
+
           const SizedBox(height: 16),
+
           Text(
             _recipe['name'],
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+
+          const SizedBox(height: 10),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _infoChip(Icons.timer, _recipe['time']),
+              const SizedBox(width: 20),
+              _infoChip(Icons.people, '${_recipe['servings']} pers'),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoBar() {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildInfoItem('⏱️', _recipe['time'], 'Temps'),
-          _buildInfoItem('👥', _recipe['servings'], 'Portions'),
-          _buildInfoItem('📊', _recipe['difficulty'], 'Difficulté'),
-          _buildInfoItem('🏷️', _recipe['category'], 'Catégorie'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoItem(String icon, String value, String label) {
-    return Column(
+  Widget _infoChip(IconData icon, String text) {
+    return Row(
       children: [
-        Text(icon, style: const TextStyle(fontSize: 24)),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-        ),
-        const SizedBox(height: 2),
-        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+        Icon(icon, size: 18, color: Colors.grey),
+        const SizedBox(width: 6),
+        Text(text, style: const TextStyle(color: Colors.grey)),
       ],
     );
   }
 
-  Widget _buildSection(String title, Widget content) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
+  // 🔥 SECTION DESIGN
+  Widget _buildSection(
+    String title,
+    IconData icon,
+    Color color,
+    Widget content,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF7C3AED),
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 15),
           content,
         ],
       ),
     );
   }
 
-  Widget _buildIngredientsList() {
+  // 🔥 INGREDIENTS
+  Widget _buildIngredients() {
     return Column(
-      children: (_recipe['ingredients'] as List<String>)
-          .asMap()
-          .entries
+      children: (_recipe['ingredients'] as List)
           .map(
-            (entry) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+            (e) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
               child: Row(
                 children: [
                   Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: _recipe['color'].withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Icon(Icons.check, size: 16, color: _recipe['color']),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      entry.value,
-                      style: const TextStyle(fontSize: 14),
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: Colors.purple,
+                      shape: BoxShape.circle,
                     ),
                   ),
+                  const SizedBox(width: 10),
+                  Text(e.toString()),
                 ],
               ),
             ),
@@ -211,20 +281,20 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
     );
   }
 
-  Widget _buildInstructionsList() {
+  // 🔥 INSTRUCTIONS
+  Widget _buildInstructions() {
     return Column(
-      children: (_recipe['instructions'] as List<String>)
+      children: (_recipe['instructions'] as List)
           .asMap()
           .entries
           .map(
             (entry) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(vertical: 8),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 28,
-                    height: 28,
+                    width: 26,
+                    height: 26,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
@@ -237,21 +307,12 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                     child: Center(
                       child: Text(
                         '${entry.key + 1}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
+                        style: const TextStyle(color: Colors.white),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      entry.value,
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                  ),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(entry.value.toString())),
                 ],
               ),
             ),
@@ -260,88 +321,19 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
     );
   }
 
-  Widget _buildNutritionInfo() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
-      ),
+  // 🔥 BOUTONS BAS
+  Widget _buildButtons() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildNutritionItem('Calories', '245'),
-          _buildNutritionItem('Protéines', '15g'),
-          _buildNutritionItem('Lipides', '12g'),
-          _buildNutritionItem('Glucides', '8g'),
+          Expanded(
+            child: OutlinedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Retour'),
+            ),
+          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildNutritionItem(String label, String value) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-        ),
-        const SizedBox(height: 4),
-        Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-      ],
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () => Navigator.pop(context),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  side: const BorderSide(color: Color(0xFF7C3AED)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Retour',
-                  style: TextStyle(color: Color(0xFF7C3AED)),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Recette ajoutée à votre planning!'),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF7C3AED),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Déguster',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
