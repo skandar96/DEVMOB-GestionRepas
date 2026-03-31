@@ -1,6 +1,9 @@
 import 'package:uuid/uuid.dart';
+import 'ingredient.dart';
 
 enum RecipeCategory { petitDejeuner, dejeuner, diner, dessert }
+
+enum RecipeDifficulty { facile, moyen, difficile }
 
 extension RecipeCategoryExtension on RecipeCategory {
   String get label {
@@ -15,87 +18,97 @@ extension RecipeCategoryExtension on RecipeCategory {
         return 'Dessert';
     }
   }
+}
 
-  String get colorCode {
+extension RecipeDifficultyExtension on RecipeDifficulty {
+  String get label {
     switch (this) {
-      case RecipeCategory.petitDejeuner:
-        return '#6366F1'; // Indigo
-      case RecipeCategory.dejeuner:
-        return '#F97316'; // Orange
-      case RecipeCategory.diner:
-        return '#EC4899'; // Pink
-      case RecipeCategory.dessert:
-        return '#8B5CF6'; // Purple
+      case RecipeDifficulty.facile:
+        return 'Facile';
+      case RecipeDifficulty.moyen:
+        return 'Moyen';
+      case RecipeDifficulty.difficile:
+        return 'Difficile';
     }
   }
 }
 
 class Recipe {
   final String id;
-  final String title;
+  final String name;
   final String description;
-  final int prepTime; // en minutes
-  final int portions;
-  final List<String> ingredients;
-  final List<String> steps;
+  final int preparationTime; // en minutes
+  final int servings;
+  final List<Ingredient> ingredients;
+  final List<String> instructions;
   final RecipeCategory category;
+  final RecipeDifficulty difficulty;
 
   Recipe({
     String? id,
-    required this.title,
+    required this.name,
     required this.description,
-    required this.prepTime,
-    this.portions = 2,
+    required this.preparationTime,
+    this.servings = 2,
     required this.ingredients,
-    required this.steps,
+    required this.instructions,
     this.category = RecipeCategory.dejeuner,
+    this.difficulty = RecipeDifficulty.moyen,
   }) : id = id ?? const Uuid().v4();
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'title': title,
+      'name': name,
       'description': description,
-      'prepTime': prepTime,
-      'portions': portions,
-      'ingredients': ingredients,
-      'steps': steps,
-      'category': category.toString(),
+      'preparationTime': preparationTime,
+      'servings': servings,
+      'ingredients': ingredients.map((i) => i.toMap()).toList(),
+      'instructions': instructions,
+      'category': category.index,
+      'difficulty': difficulty.index,
     };
   }
 
   factory Recipe.fromMap(Map<String, dynamic> map) {
     return Recipe(
       id: map['id'] ?? '',
-      title: map['title'] ?? '',
+      name: map['name'] ?? '',
       description: map['description'] ?? '',
-      prepTime: map['prepTime'] ?? 0,
-      portions: map['portions'] ?? 2,
-      ingredients: List<String>.from(map['ingredients'] ?? []),
-      steps: List<String>.from(map['steps'] ?? []),
-      category: RecipeCategory.values[int.parse(map['category'] ?? '1')],
+      preparationTime: map['preparationTime'] ?? 0,
+      servings: map['servings'] ?? 2,
+      ingredients:
+          (map['ingredients'] as List?)
+              ?.map((i) => Ingredient.fromMap(i as Map<String, dynamic>))
+              .toList() ??
+          [],
+      instructions: List<String>.from(map['instructions'] ?? []),
+      category: RecipeCategory.values[map['category'] ?? 1],
+      difficulty: RecipeDifficulty.values[map['difficulty'] ?? 1],
     );
   }
 
   Recipe copyWith({
     String? id,
-    String? title,
+    String? name,
     String? description,
-    int? prepTime,
-    int? portions,
-    List<String>? ingredients,
-    List<String>? steps,
+    int? preparationTime,
+    int? servings,
+    List<Ingredient>? ingredients,
+    List<String>? instructions,
     RecipeCategory? category,
+    RecipeDifficulty? difficulty,
   }) {
     return Recipe(
       id: id ?? this.id,
-      title: title ?? this.title,
+      name: name ?? this.name,
       description: description ?? this.description,
-      prepTime: prepTime ?? this.prepTime,
-      portions: portions ?? this.portions,
+      preparationTime: preparationTime ?? this.preparationTime,
+      servings: servings ?? this.servings,
       ingredients: ingredients ?? this.ingredients,
-      steps: steps ?? this.steps,
+      instructions: instructions ?? this.instructions,
       category: category ?? this.category,
+      difficulty: difficulty ?? this.difficulty,
     );
   }
 }
