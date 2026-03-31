@@ -3,10 +3,7 @@ import '../views/Auth/RegisterPage .dart';
 import '../views/Auth/LoginPage.dart';
 import '../views/Home/main_screen.dart';
 
-
-
 class AppRoutes {
-  // Noms des routes (constants pour éviter les fautes de frappe)
   static const String login = '/login';
   static const String register = '/register';
   static const String home = '/home';
@@ -22,5 +19,5 @@ class AppRoutes {
   }
 
   // Route initiale
-  static const String initialRoute = login;
+  static const String initialRoute = '/login';
 }

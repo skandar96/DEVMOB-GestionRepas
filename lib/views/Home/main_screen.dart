@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../Home/home_page.dart';
+import '../Mealplan/MealCalendarPage.dart';
+import '../Shopping/ShoppingListPage.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -20,9 +22,8 @@ class MainNavigationState extends State<MainNavigation> {
 
   final List<Widget> _pages = const [
     HomePage(),
-    Center(child: Text("Recettes")),
-    Center(child: Text("Planning")),
-    Center(child: Text("Courses")),
+    MealCalendarPage(),
+    ShoppingListPage(),
   ];
 
   @override
