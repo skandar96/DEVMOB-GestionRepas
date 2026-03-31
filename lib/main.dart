@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gestionrepas/navigation/routes.dart';
 import 'package:gestionrepas/providers/auth_provider.dart';
+import 'package:gestionrepas/providers/RecipeProvider.dart';
 import 'package:gestionrepas/views/Recipe/RecipeDetailPage.dart';
 import 'package:firebase_core/firebase_core.dart';
 
@@ -10,7 +11,10 @@ void main() async {
   await Firebase.initializeApp();
   runApp(
     MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => AuthProvider())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => RecipeProvider()),
+      ],
       child: const MyApp(),
     ),
   );

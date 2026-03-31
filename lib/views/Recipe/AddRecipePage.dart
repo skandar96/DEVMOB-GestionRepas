@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/RecipeProvider.dart';
+import '../../Models/recipe.dart';
+import '../../Models/ingredient.dart';
 
 class AddRecipePage extends StatefulWidget {
   const AddRecipePage({super.key});
@@ -16,17 +20,8 @@ class _AddRecipePageState extends State<AddRecipePage> {
   final _ingredientsController = TextEditingController();
   final _instructionsController = TextEditingController();
 
-  String _selectedCategory = 'Déjeuner';
-  String _selectedDifficulty = 'Facile';
-
-  final List<String> _categories = [
-    'Petit Déjeuner',
-    'Déjeuner',
-    'Dîner',
-    'Dessert',
-    'Snack',
-  ];
-  final List<String> _difficulties = ['Facile', 'Moyen', 'Difficile'];
+  RecipeCategory _selectedCategory = RecipeCategory.dejeuner;
+  RecipeDifficulty _selectedDifficulty = RecipeDifficulty.facile;
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +55,6 @@ class _AddRecipePageState extends State<AddRecipePage> {
                 maxLines: 3,
               ),
               const SizedBox(height: 16),
-
               _buildSection('Détails'),
               Row(
                 children: [
@@ -84,19 +78,10 @@ class _AddRecipePageState extends State<AddRecipePage> {
                 ],
               ),
               const SizedBox(height: 12),
-              _buildDropdown('Catégorie', _selectedCategory, _categories, (
-                value,
-              ) {
-                setState(() => _selectedCategory = value!);
-              }),
+              _buildCategoryDropdown(),
               const SizedBox(height: 12),
-              _buildDropdown('Difficulté', _selectedDifficulty, _difficulties, (
-                value,
-              ) {
-                setState(() => _selectedDifficulty = value!);
-              }),
+              _buildDifficultyDropdown(),
               const SizedBox(height: 16),
-
               _buildSection('Ingrédients'),
               _buildTextField(
                 _ingredientsController,
@@ -105,7 +90,6 @@ class _AddRecipePageState extends State<AddRecipePage> {
                 maxLines: 5,
               ),
               const SizedBox(height: 16),
-
               _buildSection('Instructions'),
               _buildTextField(
                 _instructionsController,
@@ -114,7 +98,6 @@ class _AddRecipePageState extends State<AddRecipePage> {
                 maxLines: 5,
               ),
               const SizedBox(height: 24),
-
               _buildActionButtons(),
               const SizedBox(height: 16),
             ],
@@ -169,24 +152,51 @@ class _AddRecipePageState extends State<AddRecipePage> {
     );
   }
 
-  Widget _buildDropdown(
-    String label,
-    String value,
-    List<String> items,
-    Function(String?) onChanged,
-  ) {
-    return DropdownButtonFormField<String>(
-      value: value,
+  Widget _buildCategoryDropdown() {
+    return DropdownButtonFormField<RecipeCategory>(
+      value: _selectedCategory,
       decoration: InputDecoration(
-        labelText: label,
+        labelText: 'Catégorie',
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
         fillColor: Colors.grey[50],
       ),
-      items: items
-          .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+      items: RecipeCategory.values
+          .map(
+            (category) =>
+                DropdownMenuItem(value: category, child: Text(category.label)),
+          )
           .toList(),
-      onChanged: onChanged,
+      onChanged: (value) {
+        if (value != null) {
+          setState(() => _selectedCategory = value);
+        }
+      },
+    );
+  }
+
+  Widget _buildDifficultyDropdown() {
+    return DropdownButtonFormField<RecipeDifficulty>(
+      value: _selectedDifficulty,
+      decoration: InputDecoration(
+        labelText: 'Difficulté',
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        filled: true,
+        fillColor: Colors.grey[50],
+      ),
+      items: RecipeDifficulty.values
+          .map(
+            (difficulty) => DropdownMenuItem(
+              value: difficulty,
+              child: Text(difficulty.label),
+            ),
+          )
+          .toList(),
+      onChanged: (value) {
+        if (value != null) {
+          setState(() => _selectedDifficulty = value);
+        }
+      },
     );
   }
 
@@ -233,12 +243,60 @@ class _AddRecipePageState extends State<AddRecipePage> {
     );
   }
 
-  void _saveRecipe() {
+  Future<void> _saveRecipe() async {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Recette enregistrée avec succès!')),
-      );
-      Navigator.pop(context);
+      try {
+        final ingredients = _ingredientsController.text
+            .split('\n')
+            .where((e) => e.isNotEmpty)
+            .map((line) {
+              final parts = line.split(' - ');
+              if (parts.length >= 3) {
+                return Ingredient(
+                  name: parts[0].trim(),
+                  quantity: parts[1].trim(),
+                  unit: parts[2].trim(),
+                );
+              }
+              return Ingredient(
+                name: line.trim(),
+                quantity: '1',
+                unit: 'unité',
+              );
+            })
+            .toList();
+
+        final instructions = _instructionsController.text
+            .split('\n')
+            .where((e) => e.isNotEmpty)
+            .toList();
+
+        final recipe = Recipe(
+          name: _nameController.text,
+          description: _descriptionController.text,
+          preparationTime: int.parse(_timeController.text),
+          servings: int.parse(_servingsController.text),
+          ingredients: ingredients,
+          instructions: instructions,
+          category: _selectedCategory,
+          difficulty: _selectedDifficulty,
+        );
+
+        await context.read<RecipeProvider>().addRecipe(recipe);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Recette enregistrée avec succès!')),
+          );
+          Navigator.pop(context);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+        }
+      }
     }
   }
 

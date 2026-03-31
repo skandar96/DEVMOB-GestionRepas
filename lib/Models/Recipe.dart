@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'ingredient.dart';
 
@@ -16,6 +17,19 @@ extension RecipeCategoryExtension on RecipeCategory {
         return 'Dîner';
       case RecipeCategory.dessert:
         return 'Dessert';
+    }
+  }
+
+  Color get color {
+    switch (this) {
+      case RecipeCategory.petitDejeuner:
+        return const Color(0xFFF97316); // Orange
+      case RecipeCategory.dejeuner:
+        return const Color(0xFF3B82F6); // Blue
+      case RecipeCategory.diner:
+        return const Color(0xFFEC4899); // Pink
+      case RecipeCategory.dessert:
+        return const Color(0xFFA855F7); // Purple
     }
   }
 }

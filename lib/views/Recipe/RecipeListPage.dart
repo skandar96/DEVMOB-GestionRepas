@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/RecipeProvider.dart';
+import '../../Models/recipe.dart';
 
 class RecipeListPage extends StatefulWidget {
   const RecipeListPage({super.key});
@@ -19,135 +22,123 @@ class _RecipeListPageState extends State<RecipeListPage> {
     'Dessert',
   ];
 
-  final List<Map<String, dynamic>> _recipes = [
-    {
-      'id': 1,
-      'name': 'Salade Césair',
-      'time': '15 min',
-      'servings': '2',
-      'difficulty': 'Facile',
-      'color': const Color(0xFF3B82F6),
-      'category': 'Déjeuner',
-    },
-    {
-      'id': 2,
-      'name': 'Omelette aux légumes',
-      'time': '10 min',
-      'servings': '1',
-      'difficulty': 'Facile',
-      'color': const Color(0xFFF97316),
-      'category': 'Petit Déjeuner',
-    },
-    {
-      'id': 3,
-      'name': 'Pâtes Carbonara',
-      'time': '20 min',
-      'servings': '2',
-      'difficulty': 'Moyen',
-      'color': const Color(0xFFA855F7),
-      'category': 'Dîner',
-    },
-    {
-      'id': 4,
-      'name': 'Smoothie Bowl',
-      'time': '5 min',
-      'servings': '1',
-      'difficulty': 'Facile',
-      'color': const Color(0xFFF97316),
-      'category': 'Petit Déjeuner',
-    },
-    {
-      'id': 5,
-      'name': 'Poulet Rôti aux Herbes',
-      'time': '45 min',
-      'servings': '4',
-      'difficulty': 'Moyen',
-      'color': const Color(0xFFA855F7),
-      'category': 'Dîner',
-    },
-    {
-      'id': 6,
-      'name': 'Tarte aux Pommes',
-      'time': '60 min',
-      'servings': '6',
-      'difficulty': 'Difficile',
-      'color': const Color(0xFFEC4899),
-      'category': 'Dessert',
-    },
-  ];
-
-  List<Map<String, dynamic>> get _filteredRecipes {
-    return _recipes.where((recipe) {
-      final matchesCategory =
-          _selectedCategory == 'Tous' ||
-          recipe['category'] == _selectedCategory;
-      final matchesSearch = recipe['name'].toLowerCase().contains(
-        _searchController.text.toLowerCase(),
-      );
-      return matchesCategory && matchesSearch;
-    }).toList();
+  @override
+  void initState() {
+    super.initState();
+    // Charger les recettes depuis Firestore
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<RecipeProvider>().loadRecipes();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: _buildAppBar(),
-      body: Column(
-        children: [
-          _buildCategoryFilter(),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Row(
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF7C3AED),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+      body: Consumer<RecipeProvider>(
+        builder: (context, recipeProvider, child) {
+          if (recipeProvider.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (recipeProvider.error != null) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Erreur: ${recipeProvider.error}'),
+                ],
+              ),
+            );
+          }
+
+          final recipes = recipeProvider.recipes;
+          final filteredRecipes = _getFilteredRecipes(recipes);
+
+          return Column(
+            children: [
+              _buildCategoryFilter(),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF7C3AED),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${filteredRecipes.length} recettes trouvées',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  '${_filteredRecipes.length} recettes trouvées',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _filteredRecipes.length,
-              itemBuilder: (context, index) {
-                return _buildRecipeCard(_filteredRecipes[index]);
-              },
-            ),
-          ),
-        ],
+              ),
+              Expanded(
+                child: filteredRecipes.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(
+                              Icons.restaurant_menu,
+                              size: 48,
+                              color: Colors.grey,
+                            ),
+                            SizedBox(height: 16),
+                            Text('Aucune recette trouvée'),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: filteredRecipes.length,
+                        itemBuilder: (context, index) {
+                          return _buildRecipeCard(filteredRecipes[index]);
+                        },
+                      ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
+  List<Recipe> _getFilteredRecipes(List<Recipe> recipes) {
+    return recipes.where((recipe) {
+      final matchesCategory =
+          _selectedCategory == 'Tous' ||
+          recipe.category.label == _selectedCategory;
+      final matchesSearch = recipe.name.toLowerCase().contains(
+        _searchController.text.toLowerCase(),
+      );
+      return matchesCategory && matchesSearch;
+    }).toList();
+  }
+
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: const Color(0xFF7C86FF),
+      backgroundColor: const Color.fromARGB(255, 97, 21, 228),
       elevation: 0,
-      toolbarHeight: 160,
+      toolbarHeight: 100,
       flexibleSpace: Container(
-        decoration: BoxDecoration(
-    gradient: LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [
-        Color.fromARGB(147, 74, 128, 255), // bleu
-        Color.fromARGB(129, 137, 43, 226), // violet
-        Color.fromARGB(149, 255, 20, 145), // rose
-      ],)
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF7C3AED), Color(0xFFDB2777)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
         ),
       ),
       title: Column(
@@ -188,71 +179,48 @@ class _RecipeListPageState extends State<RecipeListPage> {
   }
 
   Widget _buildCategoryFilter() {
-  return SingleChildScrollView(
-    scrollDirection: Axis.horizontal,
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-    child: Row(
-      children: [
-        const Icon(Icons.filter_list, size: 16, color: Colors.grey),
-        const SizedBox(width: 8),
-        const Text(
-          'CATÉGORIES',
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.grey,
-            fontWeight: FontWeight.bold,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          const Icon(Icons.filter_list, size: 16, color: Colors.grey),
+          const SizedBox(width: 8),
+          const Text(
+            'CATÉGORIES',
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        const SizedBox(width: 12),
-
-        ..._categories.map((category) {
-          final isSelected = _selectedCategory == category;
-
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedCategory = category;
-              });
-            },
-            child: Container(
-              margin: const EdgeInsets.only(right: 10),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 18,
-                vertical: 12,
-              ),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? const Color(0xFF6B7280) // gris foncé (comme image)
-                    : const Color(0xFFF1F2F6), // gris clair
-                borderRadius: BorderRadius.circular(20),
-
-                // 🔥 Ombre seulement si sélectionné
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : [],
-              ),
-              child: Text(
-                category,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.grey[700],
-                  fontWeight: FontWeight.w500,
-                  fontSize: 13,
+          const SizedBox(width: 12),
+          ..._categories.map(
+            (category) => Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilterChip(
+                label: Text(category),
+                selected: _selectedCategory == category,
+                onSelected: (selected) {
+                  setState(() => _selectedCategory = category);
+                },
+                backgroundColor: Colors.grey[200],
+                selectedColor: const Color(0xFF7C3AED),
+                labelStyle: TextStyle(
+                  color: _selectedCategory == category
+                      ? Colors.white
+                      : Colors.grey[700],
+                  fontSize: 12,
                 ),
               ),
             ),
-          );
-        }).toList(),
-      ],
-    ),
-  );
-}
-  Widget _buildRecipeCard(Map<String, dynamic> recipe) {
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecipeCard(Recipe recipe) {
     return GestureDetector(
       onTap: () =>
           Navigator.pushNamed(context, '/recipeDetail', arguments: recipe),
@@ -279,7 +247,10 @@ class _RecipeListPageState extends State<RecipeListPage> {
               height: 80,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [recipe['color'].withOpacity(0.7), recipe['color']],
+                  colors: [
+                    recipe.category.color.withOpacity(0.7),
+                    recipe.category.color,
+                  ],
                 ),
                 borderRadius: BorderRadius.circular(14),
               ),
@@ -296,7 +267,7 @@ class _RecipeListPageState extends State<RecipeListPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    recipe['name'],
+                    recipe.name,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
@@ -306,9 +277,9 @@ class _RecipeListPageState extends State<RecipeListPage> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      _buildInfoBadge('⏱️${recipe['time']}'),
+                      _buildInfoBadge('⏱️${recipe.preparationTime} min'),
                       const SizedBox(width: 8),
-                      _buildInfoBadge('👥${recipe['servings']} pers.'),
+                      _buildInfoBadge('👥${recipe.servings} pers.'),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -318,14 +289,14 @@ class _RecipeListPageState extends State<RecipeListPage> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: recipe['color'].withOpacity(0.12),
+                      color: recipe.category.color.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      recipe['category'],
+                      recipe.category.label,
                       style: TextStyle(
                         fontSize: 12,
-                        color: recipe['color'],
+                        color: recipe.category.color,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -339,7 +310,10 @@ class _RecipeListPageState extends State<RecipeListPage> {
               height: 48,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [recipe['color'].withOpacity(0.7), recipe['color']],
+                  colors: [
+                    recipe.category.color.withOpacity(0.7),
+                    recipe.category.color,
+                  ],
                 ),
                 borderRadius: BorderRadius.circular(12),
               ),
