@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../Home/home_page.dart';
+import '../Recipe/RecipeListPage.dart';
 import '../Mealplan/MealCalendarPage.dart';
 import '../Shopping/ShoppingListPage.dart';
 
@@ -22,6 +23,7 @@ class MainNavigationState extends State<MainNavigation> {
 
   final List<Widget> _pages = const [
     HomePage(),
+    RecipeListPage(),
     MealCalendarPage(),
     ShoppingListPage(),
   ];
@@ -30,7 +32,6 @@ class MainNavigationState extends State<MainNavigation> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _pages[_selectedIndex],
-
       bottomNavigationBar: CustomBottomNavBar(
         selectedIndex: _selectedIndex,
         onTap: switchTab,

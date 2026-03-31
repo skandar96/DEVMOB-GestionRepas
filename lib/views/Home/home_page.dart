@@ -13,56 +13,87 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       body: SingleChildScrollView(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(),
             _buildWelcomeCard(),
             _buildQuickAccess(),
             _buildStatsCard(),
+            const SizedBox(height: 80), // espace pour la bottom nav
           ],
         ),
       ),
+      
     );
   }
 
-  // 🔹 HEADER
+  // ==================== HEADER ====================
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 50, 20, 30),
+      padding: const EdgeInsets.fromLTRB(20, 50, 20, 25),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
           colors: [Color(0xFF7C3AED), Color(0xFFDB2777)],
         ),
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: const [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Text(
-                "DEVMOB",
-                style: TextStyle(color: Colors.white, fontSize: 22),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.restaurant, color: Color(0xFF7C3AED)),
               ),
-              SizedBox(height: 5),
-              Text("Gestion de Repas", style: TextStyle(color: Colors.white70)),
+              const SizedBox(width: 12),
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "DEVMOB",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    "Gestion de Repas",
+                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                  ),
+                ],
+              ),
             ],
           ),
-          Icon(Icons.logout, color: Colors.white),
+          const Icon(Icons.logout, color: Colors.white, size: 28),
         ],
       ),
     );
   }
 
-  // 🔹 WELCOME CARD
+  // ==================== WELCOME CARD ====================
   Widget _buildWelcomeCard() {
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.all(8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[200],
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -72,23 +103,23 @@ class _HomePageState extends State<HomePage> {
               gradient: const LinearGradient(
                 colors: [Color(0xFF7C3AED), Color(0xFFDB2777)],
               ),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: const Text("👋", style: TextStyle(fontSize: 20)),
+            child: const Text("👋", style: TextStyle(fontSize: 28)),
           ),
-          const SizedBox(width: 15),
+          const SizedBox(width: 16),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   "Bienvenue !",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                SizedBox(height: 5),
+                SizedBox(height: 6),
                 Text(
                   "Organisez vos repas et simplifiez vos courses quotidiennes",
-                  style: TextStyle(fontSize: 12),
+                  style: TextStyle(fontSize: 13, color: Colors.grey),
                 ),
               ],
             ),
@@ -98,7 +129,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // 🔹 QUICK ACCESS
+  // ==================== QUICK ACCESS ====================
   Widget _buildQuickAccess() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -107,40 +138,44 @@ class _HomePageState extends State<HomePage> {
         children: [
           const Text(
             "ACCÈS RAPIDE",
-            style: TextStyle(fontSize: 12, color: Colors.grey),
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisCount: 2,
-            childAspectRatio: 1.2,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 1.15,
             children: [
-              _quickItem(
-                Icons.menu_book,
-                "Mes Recettes",
-                "/recipes",
-                Colors.purple,
+              _quickAccessCard(
+                icon: Icons.menu_book_rounded,
+                title: "Mes Recettes",
+                subtitle: "Parcourir et gérer",
+                color: Colors.purple,
               ),
-              _quickItem(
-                Icons.add,
-                "Nouvelle Recette",
-                "/addRecipe",
-                Colors.pink,
+              _quickAccessCard(
+                icon: Icons.restaurant_menu_rounded,
+                title: "Nouvelle\nRecette",
+                subtitle: "Ajouter une recette",
+                color: Colors.pink,
               ),
-              _quickItem(
-                Icons.calendar_month,
-                "Planning Repas",
-                "/calendar",
-                Colors.red,
+              _quickAccessCard(
+                icon: Icons.calendar_today_rounded,
+                title: "Planning Repas",
+                subtitle: "Planifier la semaine",
+                color: Colors.red,
               ),
-              _quickItem(
-                Icons.shopping_cart,
-                "Liste de Courses",
-                "/shopping",
-                Colors.orange,
+              _quickAccessCard(
+                icon: Icons.shopping_cart_rounded,
+                title: "Liste de\nCourses",
+                subtitle: "Gérer mes achats",
+                color: Colors.orange,
               ),
             ],
           ),
@@ -149,65 +184,88 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _quickItem(IconData icon, String title, String route, Color color) {
-    return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, route),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [color.withOpacity(0.7), color],
-                ),
-                borderRadius: BorderRadius.circular(12),
+  Widget _quickAccessCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [color.withOpacity(0.85), color],
               ),
-              child: Icon(icon, color: Colors.white),
+              borderRadius: BorderRadius.circular(14),
             ),
-            const SizedBox(height: 10),
-            Text(title, textAlign: TextAlign.center),
-          ],
-        ),
+            child: Icon(icon, color: Colors.white, size: 28),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+          ),
+        ],
       ),
     );
   }
 
-  // 🔹 STATS CARD
+  // ==================== STATS CARD ====================
   Widget _buildStatsCard() {
     return Container(
       margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF7C3AED), Color(0xFFDB2777)],
         ),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Row(
+      child: const Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: const [
-          _statItem("12", "Recettes"),
-          _statItem("7", "Repas planifiés"),
-          _statItem("24", "Articles"),
+        children: [
+          _StatItem(value: "12", label: "Recettes"),
+          _StatItem(value: "7", label: "Repas planifiés"),
+          _StatItem(value: "24", label: "Articles"),
         ],
       ),
     );
   }
+
+  // ==================== BOTTOM NAVIGATION ====================
+  
+  
 }
 
-// 🔹 STAT ITEM
-class _statItem extends StatelessWidget {
+// ==================== STAT ITEM WIDGET ====================
+class _StatItem extends StatelessWidget {
   final String value;
   final String label;
 
-  const _statItem(this.value, this.label);
+  const _StatItem({required this.value, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -217,12 +275,18 @@ class _statItem extends StatelessWidget {
           value,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 20,
+            fontSize: 26,
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 5),
-        Text(label, style: const TextStyle(color: Colors.white70)),
+        const SizedBox(height: 6),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 13,
+          ),
+        ),
       ],
     );
   }
