@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:gestionrepas/navigation/routes.dart';
 import 'package:gestionrepas/providers/auth_provider.dart';
 import 'package:gestionrepas/providers/RecipeProvider.dart';
-import 'package:gestionrepas/views/Recipe/RecipeDetailPage.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 void main() async {
@@ -29,15 +28,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       initialRoute: AppRoutes.initialRoute,
       routes: AppRoutes.getRoutes(),
-      onUnknownRoute: (settings) {
-        if (settings.name == '/recipeDetail') {
-          final recipe = settings.arguments as Map<String, dynamic>?;
-          return MaterialPageRoute(
-            builder: (context) => RecipeDetailPage(recipe: recipe),
-          );
-        }
-        return null;
-      },
+      onGenerateRoute: AppRoutes.generateRoute,
     );
   }
 }

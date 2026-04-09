@@ -35,6 +35,11 @@ class _RecipeListPageState extends State<RecipeListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: _buildAppBar(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => Navigator.pushNamed(context, '/addRecipe'),
+        backgroundColor: const Color(0xFF7C3AED),
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
+      ),
       body: Consumer<RecipeProvider>(
         builder: (context, recipeProvider, child) {
           if (recipeProvider.isLoading) {

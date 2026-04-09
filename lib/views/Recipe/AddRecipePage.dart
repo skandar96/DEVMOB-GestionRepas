@@ -5,7 +5,9 @@ import '../../Models/recipe.dart';
 import '../../Models/ingredient.dart';
 
 class AddRecipePage extends StatefulWidget {
-  const AddRecipePage({super.key});
+  final Recipe? recipe;
+
+  const AddRecipePage({super.key, this.recipe});
 
   @override
   State<AddRecipePage> createState() => _AddRecipePageState();
@@ -22,17 +24,61 @@ class _AddRecipePageState extends State<AddRecipePage> {
 
   RecipeCategory _selectedCategory = RecipeCategory.dejeuner;
   RecipeDifficulty _selectedDifficulty = RecipeDifficulty.facile;
+  bool _isLoading = false;
+  bool _isEditing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.recipe != null) {
+      _isEditing = true;
+      _initializeForEditing();
+    }
+  }
+
+  void _initializeForEditing() {
+    final recipe = widget.recipe!;
+    _nameController.text = recipe.name;
+    _descriptionController.text = recipe.description;
+    _timeController.text = recipe.preparationTime.toString();
+    _servingsController.text = recipe.servings.toString();
+    _selectedCategory = recipe.category;
+    _selectedDifficulty = recipe.difficulty;
+
+    // Format ingredients
+    _ingredientsController.text = recipe.ingredients
+        .map((i) => '${i.name} - ${i.quantity} - ${i.unit}')
+        .join('\n');
+
+    // Format instructions
+    _instructionsController.text = recipe.instructions.join('\n');
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    _timeController.dispose();
+    _servingsController.dispose();
+    _ingredientsController.dispose();
+    _instructionsController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF7C3AED),
-        title: const Text(
-          'Ajouter une Recette',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          _isEditing ? 'Modifier la Recette' : 'Ajouter une Recette',
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -205,7 +251,7 @@ class _AddRecipePageState extends State<AddRecipePage> {
       children: [
         Expanded(
           child: OutlinedButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: _isLoading ? null : () => Navigator.pop(context),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 12),
               side: const BorderSide(color: Color(0xFF7C3AED)),
@@ -222,21 +268,32 @@ class _AddRecipePageState extends State<AddRecipePage> {
         const SizedBox(width: 12),
         Expanded(
           child: ElevatedButton(
-            onPressed: _saveRecipe,
+            onPressed: _isLoading ? null : _saveRecipe,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF7C3AED),
+              backgroundColor: _isLoading
+                  ? Colors.grey
+                  : const Color(0xFF7C3AED),
               padding: const EdgeInsets.symmetric(vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text(
-              'Enregistrer',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            child: _isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Text(
+                    'Enregistrer',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
           ),
         ),
       ],
@@ -245,6 +302,8 @@ class _AddRecipePageState extends State<AddRecipePage> {
 
   Future<void> _saveRecipe() async {
     if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+
       try {
         final ingredients = _ingredientsController.text
             .split('\n')
@@ -271,43 +330,125 @@ class _AddRecipePageState extends State<AddRecipePage> {
             .where((e) => e.isNotEmpty)
             .toList();
 
-        final recipe = Recipe(
-          name: _nameController.text,
-          description: _descriptionController.text,
-          preparationTime: int.parse(_timeController.text),
-          servings: int.parse(_servingsController.text),
-          ingredients: ingredients,
-          instructions: instructions,
-          category: _selectedCategory,
-          difficulty: _selectedDifficulty,
-        );
+        if (_isEditing && widget.recipe != null) {
+          // Mode édition
+          final updatedRecipe = Recipe(
+            id: widget.recipe!.id,
+            name: _nameController.text,
+            description: _descriptionController.text,
+            preparationTime: int.parse(_timeController.text),
+            servings: int.parse(_servingsController.text),
+            ingredients: ingredients,
+            instructions: instructions,
+            category: _selectedCategory,
+            difficulty: _selectedDifficulty,
+            isFavorite: widget.recipe?.isFavorite ?? false,
+          );
 
-        await context.read<RecipeProvider>().addRecipe(recipe);
+          await context.read<RecipeProvider>().updateRecipe(
+            widget.recipe!.id,
+            updatedRecipe,
+          );
+
+          if (mounted) {
+            setState(() => _isLoading = false);
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: const [
+                    Icon(Icons.check_circle, color: Colors.white),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Recette modifiée avec succès!',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: Colors.blue,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+
+            await Future.delayed(const Duration(milliseconds: 300));
+            if (mounted) Navigator.pop(context);
+          }
+        } else {
+          // Mode création
+          final recipe = Recipe(
+            name: _nameController.text,
+            description: _descriptionController.text,
+            preparationTime: int.parse(_timeController.text),
+            servings: int.parse(_servingsController.text),
+            ingredients: ingredients,
+            instructions: instructions,
+            category: _selectedCategory,
+            difficulty: _selectedDifficulty,
+          );
+
+          await context.read<RecipeProvider>().addRecipe(recipe);
+
+          if (mounted) {
+            setState(() => _isLoading = false);
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: const [
+                    Icon(Icons.check_circle, color: Colors.white),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Recette ajoutée avec succès!',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: Colors.green,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+
+            await Future.delayed(const Duration(milliseconds: 300));
+            if (mounted) Navigator.pop(context);
+          }
+        }
+      } catch (e) {
+        setState(() => _isLoading = false);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Recette enregistrée avec succès!')),
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Erreur: $e',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
           );
-          Navigator.pop(context);
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
         }
       }
     }
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _descriptionController.dispose();
-    _timeController.dispose();
-    _servingsController.dispose();
-    _ingredientsController.dispose();
-    _instructionsController.dispose();
-    super.dispose();
   }
 }
