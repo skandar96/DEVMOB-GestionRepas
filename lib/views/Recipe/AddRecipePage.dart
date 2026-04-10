@@ -334,6 +334,7 @@ class _AddRecipePageState extends State<AddRecipePage> {
           // Mode édition
           final updatedRecipe = Recipe(
             id: widget.recipe!.id,
+            userId: widget.recipe!.userId,
             name: _nameController.text,
             description: _descriptionController.text,
             preparationTime: int.parse(_timeController.text),
@@ -381,6 +382,7 @@ class _AddRecipePageState extends State<AddRecipePage> {
         } else {
           // Mode création
           final recipe = Recipe(
+            userId: '', // Le provider remplacera avec le vrai userId
             name: _nameController.text,
             description: _descriptionController.text,
             preparationTime: int.parse(_timeController.text),

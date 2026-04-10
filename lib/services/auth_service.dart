@@ -7,8 +7,8 @@ class AuthService {
   // Sign up
   Future<User?> signUp(String email, String password) async {
     try {
-      fb.UserCredential result = await _firebaseAuth.createUserWithEmailAndPassword(
-          email: email, password: password);
+      fb.UserCredential result = await _firebaseAuth
+          .createUserWithEmailAndPassword(email: email, password: password);
       fb.User? fbUser = result.user;
 
       if (fbUser != null) {
@@ -28,15 +28,13 @@ class AuthService {
   Future<User?> signIn(String email, String password) async {
     try {
       fb.UserCredential result = await _firebaseAuth.signInWithEmailAndPassword(
-          email: email, password: password);
+        email: email,
+        password: password,
+      );
       fb.User? fbUser = result.user;
 
       if (fbUser != null) {
-        return User(
-          id: fbUser.uid,
-          email: fbUser.email!,
-          password: password,
-        );
+        return User(id: fbUser.uid, email: fbUser.email!, password: password);
       }
     } catch (e) {
       print("SignIn Error: $e");
@@ -46,7 +44,13 @@ class AuthService {
 
   // Logout
   Future<void> signOut() async {
-    await _firebaseAuth.signOut();
+    try {
+      await _firebaseAuth.signOut();
+      print("SignOut successful");
+    } catch (e) {
+      print("SignOut Error: $e");
+      rethrow;
+    }
   }
 
   // Current User

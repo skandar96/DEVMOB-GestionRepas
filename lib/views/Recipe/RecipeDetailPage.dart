@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../Models/recipe.dart';
-import '../../Models/ingredient.dart';
 import '../../providers/RecipeProvider.dart';
 
 class RecipeDetailPage extends StatefulWidget {

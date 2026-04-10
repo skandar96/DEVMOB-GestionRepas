@@ -6,6 +6,7 @@ import '../Recipe/RecipeListPage.dart';
 import '../Mealplan/MealCalendarPage.dart';
 import '../Shopping/ShoppingListPage.dart';
 import '../../providers/RecipeProvider.dart';
+import '../../providers/auth_provider.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -16,6 +17,16 @@ class MainNavigation extends StatefulWidget {
 
 class MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialiser l'userId du RecipeProvider
+    final authProvider = context.read<AuthProvider>();
+    if (authProvider.user != null && authProvider.user!.id != null) {
+      context.read<RecipeProvider>().setUserId(authProvider.user!.id!);
+    }
+  }
 
   void switchTab(int index) {
     // Recharger les recettes quand on va vers la page Recettes (index 1)

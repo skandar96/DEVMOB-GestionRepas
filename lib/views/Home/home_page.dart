@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/auth_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -23,7 +24,6 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      
     );
   }
 
@@ -73,7 +73,10 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
-          const Icon(Icons.logout, color: Colors.white, size: 28),
+          GestureDetector(
+            onTap: _handleLogout,
+            child: const Icon(Icons.logout, color: Colors.white, size: 28),
+          ),
         ],
       ),
     );
@@ -256,8 +259,23 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ==================== BOTTOM NAVIGATION ====================
-  
-  
+
+  // ==================== LOGOUT ====================
+  Future<void> _handleLogout() async {
+    final authService = AuthService();
+    try {
+      await authService.signOut();
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors de la déconnexion: $e')),
+        );
+      }
+    }
+  }
 }
 
 // ==================== STAT ITEM WIDGET ====================
@@ -282,10 +300,7 @@ class _StatItem extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 13,
-          ),
+          style: const TextStyle(color: Colors.white70, fontSize: 13),
         ),
       ],
     );

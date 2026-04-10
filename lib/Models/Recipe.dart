@@ -49,6 +49,7 @@ extension RecipeDifficultyExtension on RecipeDifficulty {
 
 class Recipe {
   final String id;
+  final String userId; // Liée à l'utilisateur
   final String name;
   final String description;
   final int preparationTime; // en minutes
@@ -62,6 +63,7 @@ class Recipe {
 
   Recipe({
     String? id,
+    required this.userId,
     required this.name,
     required this.description,
     required this.preparationTime,
@@ -77,6 +79,7 @@ class Recipe {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'userId': userId,
       'name': name,
       'description': description,
       'preparationTime': preparationTime,
@@ -93,6 +96,7 @@ class Recipe {
   factory Recipe.fromMap(Map<String, dynamic> map) {
     return Recipe(
       id: map['id'] ?? '',
+      userId: map['userId'] ?? '',
       name: map['name'] ?? '',
       description: map['description'] ?? '',
       preparationTime: map['preparationTime'] ?? 0,
@@ -112,6 +116,7 @@ class Recipe {
 
   Recipe copyWith({
     String? id,
+    String? userId,
     String? name,
     String? description,
     int? preparationTime,
@@ -125,6 +130,7 @@ class Recipe {
   }) {
     return Recipe(
       id: id ?? this.id,
+      userId: userId ?? this.userId,
       name: name ?? this.name,
       description: description ?? this.description,
       preparationTime: preparationTime ?? this.preparationTime,
