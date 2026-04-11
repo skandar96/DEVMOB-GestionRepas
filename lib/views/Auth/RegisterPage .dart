@@ -62,7 +62,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     gradient: const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Color(0xFF7B2FF7), Color(0xFFAB47BC)],
+                      colors: [Color(0xFF7C4DFF), Color(0xFFE040FB)],
                     ),
                   ),
                   child: ClipRRect(
@@ -145,70 +145,72 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           width: double.infinity,
                           height: 50,
                           child: ElevatedButton(
-                            onPressed: authProvider.isLoading
-                                ? null
-                                : () async {
-                                    authProvider.clearError();
+  onPressed: authProvider.isLoading
+      ? null
+      : () async {
+          authProvider.clearError();
 
-                                    // Check password confirmation
-                                    if (_passwordController.text.trim() !=
-                                        _confirmPasswordController.text.trim()) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                              'Les mots de passe ne correspondent pas'),
-                                        ),
-                                      );
-                                      return;
-                                    }
+          if (_passwordController.text.trim() !=
+              _confirmPasswordController.text.trim()) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Les mots de passe ne correspondent pas'),
+              ),
+            );
+            return;
+          }
 
-                                    // Call controller to register
-                                    await _authController.signUp(
-                                      _emailController.text.trim(),
-                                      _passwordController.text.trim(),
-                                      authProvider,
-                                    );
+          await _authController.signUp(
+            _emailController.text.trim(),
+            _passwordController.text.trim(),
+            authProvider,
+          );
 
-                                    if (authProvider.isLoggedIn) {
-                                      Navigator.pushReplacementNamed(
-                                          context, '/home');
-                                    } else if (authProvider.error.isNotEmpty) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text(authProvider.error),
-                                        ),
-                                      );
-                                    }
-                                  },
-                            style: ElevatedButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(25),
-                              ),
-                              backgroundColor: const Color(0xFF7C4DFF),
-                            ),
-                            child: authProvider.isLoading
-                                ? const CircularProgressIndicator(
-                                    color: Colors.white,
-                                  )
-                                : const Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.person_add_outlined,
-                                        color: Colors.white,
-                                        size: 20,
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text(
-                                        'Créer un compte',
-                                        style: TextStyle(
-                                            color: Colors.white, fontSize: 16),
-                                      ),
-                                    ],
-                                  ),
-                          ),
+          if (authProvider.isLoggedIn) {
+            Navigator.pushReplacementNamed(context, '/home');
+          } else if (authProvider.error.isNotEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(authProvider.error)),
+            );
+          }
+        },
+
+  style: ElevatedButton.styleFrom(
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(25),
+    ),
+    backgroundColor: Colors.transparent,
+    shadowColor: Colors.transparent,
+    padding: EdgeInsets.zero,
+  ),
+
+  child: Ink(
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(25),
+      gradient: const LinearGradient(
+        colors: [Color(0xFF7C4DFF), Color(0xFFE040FB)],
+      ),
+    ),
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      alignment: Alignment.center,
+      child: authProvider.isLoading
+          ? const CircularProgressIndicator(color: Colors.white)
+          : const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.person_add_outlined,
+                    color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'Créer un compte',
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ],
+            ),
+    ),
+  ),
+)
                         ),
                       ],
                     ),

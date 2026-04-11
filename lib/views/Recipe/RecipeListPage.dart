@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/RecipeProvider.dart';
 import '../../Models/recipe.dart';
+import '../../theme/gradient_header.dart';
 
 class RecipeListPage extends StatefulWidget {
   const RecipeListPage({super.key});
@@ -34,89 +35,97 @@ class _RecipeListPageState extends State<RecipeListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildAppBar(),
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.pushNamed(context, '/addRecipe'),
         backgroundColor: const Color(0xFF7C3AED),
         child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
-      body: Consumer<RecipeProvider>(
-        builder: (context, recipeProvider, child) {
-          if (recipeProvider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: Column(
+        children: [
+          _buildAppBar(),
+          Expanded(child: _buildBody()),
+        ],
+      ),
+    );
+  }
 
-          if (recipeProvider.error != null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildBody() {
+    return Consumer<RecipeProvider>(
+      builder: (context, recipeProvider, child) {
+        if (recipeProvider.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (recipeProvider.error != null) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                const SizedBox(height: 16),
+                Text('Erreur: ${recipeProvider.error}'),
+              ],
+            ),
+          );
+        }
+
+        final recipes = recipeProvider.recipes;
+        final filteredRecipes = _getFilteredRecipes(recipes);
+
+        return Column(
+          children: [
+            _buildCategoryFilter(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Row(
                 children: [
-                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text('Erreur: ${recipeProvider.error}'),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7C3AED),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${filteredRecipes.length} recettes trouvées',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ],
               ),
-            );
-          }
-
-          final recipes = recipeProvider.recipes;
-          final filteredRecipes = _getFilteredRecipes(recipes);
-
-          return Column(
-            children: [
-              _buildCategoryFilter(),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF7C3AED),
-                        borderRadius: BorderRadius.circular(2),
+            ),
+            Expanded(
+              child: filteredRecipes.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(
+                            Icons.restaurant_menu,
+                            size: 48,
+                            color: Colors.grey,
+                          ),
+                          SizedBox(height: 16),
+                          Text('Aucune recette trouvée'),
+                        ],
                       ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: filteredRecipes.length,
+                      itemBuilder: (context, index) {
+                        return _buildRecipeCard(filteredRecipes[index]);
+                      },
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${filteredRecipes.length} recettes trouvées',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: filteredRecipes.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Icon(
-                              Icons.restaurant_menu,
-                              size: 48,
-                              color: Colors.grey,
-                            ),
-                            SizedBox(height: 16),
-                            Text('Aucune recette trouvée'),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: filteredRecipes.length,
-                        itemBuilder: (context, index) {
-                          return _buildRecipeCard(filteredRecipes[index]);
-                        },
-                      ),
-              ),
-            ],
-          );
-        },
-      ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -132,32 +141,21 @@ class _RecipeListPageState extends State<RecipeListPage> {
     }).toList();
   }
 
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: const Color.fromARGB(255, 97, 21, 228),
-      elevation: 0,
-      toolbarHeight: 100,
-      flexibleSpace: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF7C3AED), Color(0xFFDB2777)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-      ),
-      title: Column(
+  Widget _buildAppBar() {
+    return GradientHeader(
+      padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             'Mes Recettes',
             style: TextStyle(
-              fontSize: 22,
+              fontSize: 30,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
           TextField(
             controller: _searchController,
             onChanged: (value) => setState(() {}),
@@ -166,20 +164,19 @@ class _RecipeListPageState extends State<RecipeListPage> {
               hintStyle: const TextStyle(color: Colors.grey),
               prefixIcon: const Icon(Icons.search, color: Colors.grey),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(25),
+                borderRadius: BorderRadius.circular(20),
                 borderSide: BorderSide.none,
               ),
               filled: true,
               fillColor: Colors.white.withOpacity(0.95),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
-                vertical: 12,
+                vertical: 20,
               ),
             ),
           ),
         ],
       ),
-      centerTitle: false,
     );
   }
 
@@ -320,10 +317,10 @@ class _RecipeListPageState extends State<RecipeListPage> {
                     recipe.category.color,
                   ],
                 ),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(25),
               ),
               child: const Icon(
-                Icons.arrow_forward,
+                Icons.navigate_next_outlined,
                 color: Colors.white,
                 size: 24,
               ),

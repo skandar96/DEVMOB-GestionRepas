@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
+import '../../theme/gradient_header.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -14,13 +15,28 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       body: SingleChildScrollView(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(),
-            _buildWelcomeCard(),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // 🔵 HEADER (background)
+                _buildHeader(),
+
+                // 🟣 WELCOME CARD (overlapping)
+                Positioned(
+                  bottom: -80, // adjust overlap height
+                  left: 16,
+                  right: 16,
+                  child: _buildWelcomeCard(),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 85), // space for overlap
+
             _buildQuickAccess(),
             _buildStatsCard(),
-            const SizedBox(height: 80), // espace pour la bottom nav
+            const SizedBox(height: 80),
           ],
         ),
       ),
@@ -29,17 +45,7 @@ class _HomePageState extends State<HomePage> {
 
   // ==================== HEADER ====================
   Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 50, 20, 25),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF7C3AED), Color(0xFFDB2777)],
-        ),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
-      ),
+    return GradientHeader(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -48,10 +54,14 @@ class _HomePageState extends State<HomePage> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Colors.white.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.restaurant, color: Color(0xFF7C3AED)),
+                child: Container(
+                  child: Image.asset('images/icon.png', fit: BoxFit.cover),
+                  width: 40,
+                  height: 40,
+                ),
               ),
               const SizedBox(width: 12),
               const Column(
@@ -104,7 +114,7 @@ class _HomePageState extends State<HomePage> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF7C3AED), Color(0xFFDB2777)],
+                colors: [Color.fromARGB(205, 104, 102, 249), Color.fromARGB(237, 174, 83, 249)],
               ),
               borderRadius: BorderRadius.circular(14),
             ),
@@ -122,7 +132,7 @@ class _HomePageState extends State<HomePage> {
                 SizedBox(height: 6),
                 Text(
                   "Organisez vos repas et simplifiez vos courses quotidiennes",
-                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                  style: TextStyle(fontSize: 15, color: Colors.grey),
                 ),
               ],
             ),
@@ -147,7 +157,7 @@ class _HomePageState extends State<HomePage> {
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 12),
+
           GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -242,8 +252,11 @@ class _HomePageState extends State<HomePage> {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF7C3AED), Color(0xFFDB2777)],
+        gradient: LinearGradient(
+          colors: GradientPalette.colors,
+          stops: GradientPalette.stops,
+          begin: Alignment.topCenter,
+          end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
       ),

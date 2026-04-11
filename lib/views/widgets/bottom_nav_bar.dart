@@ -49,7 +49,7 @@ class CustomBottomNavBar extends StatelessWidget {
                     color: isSelected ? null : const Color(0xFFF1F3F8),
                     gradient: isSelected
                         ? const LinearGradient(
-                            colors: [Color(0xFF7C3AED), Color(0xFFDB2777)],
+                            colors: [Color.fromARGB(205, 104, 102, 249), Color.fromARGB(237, 174, 83, 249)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           )

@@ -59,7 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     gradient: const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Color(0xFF7B2FF7), Color(0xFFAB47BC)],
+                      colors: [Color(0xFF7C4DFF), Color(0xFFE040FB)],
                     ),
                   ),
                   child: ClipRRect(
@@ -134,47 +134,54 @@ class _LoginScreenState extends State<LoginScreen> {
                           width: double.infinity,
                           height: 50,
                           child: ElevatedButton(
-                            onPressed: authProvider.isLoading
-                                ? null
-                                : () async {
-                                    // Clear previous errors
-                                    authProvider.clearError();
+  onPressed: authProvider.isLoading
+      ? null
+      : () async {
+          authProvider.clearError();
 
-                                    // Call controller to login
-                                    await _authController.signIn(
-                                      _emailController.text.trim(),
-                                      _passwordController.text.trim(),
-                                      authProvider,
-                                    );
+          await _authController.signIn(
+            _emailController.text.trim(),
+            _passwordController.text.trim(),
+            authProvider,
+          );
 
-                                    // Check if login successful
-                                    if (authProvider.isLoggedIn) {
-                                      Navigator.pushReplacementNamed(
-                                          context, '/home');
-                                    } else if (authProvider.error.isNotEmpty) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text(authProvider.error),
-                                        ),
-                                      );
-                                    }
-                                  },
-                            style: ElevatedButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(25),
-                              ),
-                              backgroundColor: const Color(0xFF7C4DFF),
-                            ),
-                            child: authProvider.isLoading
-                                ? const CircularProgressIndicator(
-                                    color: Colors.white,
-                                  )
-                                : const Text(
-                                    'Se connecter',
-                                    style: TextStyle(
-                                        color: Colors.white, fontSize: 16),
-                                  ),
-                          ),
+          if (authProvider.isLoggedIn) {
+            Navigator.pushReplacementNamed(context, '/home');
+          } else if (authProvider.error.isNotEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(authProvider.error)),
+            );
+          }
+        },
+
+  style: ElevatedButton.styleFrom(
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(25),
+    ),
+    backgroundColor: Colors.transparent,
+    shadowColor: Colors.transparent,
+    padding: EdgeInsets.zero,
+  ),
+
+  child: Ink(
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(25),
+      gradient: const LinearGradient(
+        colors: [Color(0xFF7C4DFF), Color(0xFFE040FB)],
+      ),
+    ),
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      alignment: Alignment.center,
+      child: authProvider.isLoading
+          ? const CircularProgressIndicator(color: Colors.white)
+          : const Text(
+              'Se connecter',
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+    ),
+  ),
+)
                         ),
                       ],
                     ),
