@@ -129,59 +129,93 @@ class _LoginScreenState extends State<LoginScreen> {
                             },
                           ),
                         ),
-                        const SizedBox(height: 28),
+                        const SizedBox(height: 12),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.pushNamed(context, '/forgot-password');
+                            },
+                            child: const Text(
+                              'Mot de passe oublié ?',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF7C4DFF),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                         SizedBox(
                           width: double.infinity,
                           height: 50,
                           child: ElevatedButton(
-  onPressed: authProvider.isLoading
-      ? null
-      : () async {
-          authProvider.clearError();
+                            onPressed: authProvider.isLoading
+                                ? null
+                                : () async {
+                                    authProvider.clearError();
 
-          await _authController.signIn(
-            _emailController.text.trim(),
-            _passwordController.text.trim(),
-            authProvider,
-          );
+                                    await _authController.signIn(
+                                      _emailController.text.trim(),
+                                      _passwordController.text.trim(),
+                                      authProvider,
+                                    );
 
-          if (authProvider.isLoggedIn) {
-            Navigator.pushReplacementNamed(context, '/home');
-          } else if (authProvider.error.isNotEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(authProvider.error)),
-            );
-          }
-        },
+                                    if (authProvider.isLoggedIn) {
+                                      Navigator.pushReplacementNamed(
+                                        context,
+                                        '/home',
+                                      );
+                                    } else if (authProvider.error.isNotEmpty) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(authProvider.error),
+                                        ),
+                                      );
+                                    }
+                                  },
 
-  style: ElevatedButton.styleFrom(
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(25),
-    ),
-    backgroundColor: Colors.transparent,
-    shadowColor: Colors.transparent,
-    padding: EdgeInsets.zero,
-  ),
+                            style: ElevatedButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(25),
+                              ),
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              padding: EdgeInsets.zero,
+                            ),
 
-  child: Ink(
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(25),
-      gradient: const LinearGradient(
-        colors: [Color(0xFF7C4DFF), Color(0xFFE040FB)],
-      ),
-    ),
-    child: Container(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      alignment: Alignment.center,
-      child: authProvider.isLoading
-          ? const CircularProgressIndicator(color: Colors.white)
-          : const Text(
-              'Se connecter',
-              style: TextStyle(color: Colors.white, fontSize: 16),
-            ),
-    ),
-  ),
-)
+                            child: Ink(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(25),
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xFF7C4DFF),
+                                    Color(0xFFE040FB),
+                                  ],
+                                ),
+                              ),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                alignment: Alignment.center,
+                                child: authProvider.isLoading
+                                    ? const CircularProgressIndicator(
+                                        color: Colors.white,
+                                      )
+                                    : const Text(
+                                        'Se connecter',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),

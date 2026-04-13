@@ -6,7 +6,11 @@ class AuthController {
   final AuthService _authService = AuthService();
 
   // Sign up
-  Future<void> signUp(String email, String password, AuthProvider authProvider) async {
+  Future<void> signUp(
+    String email,
+    String password,
+    AuthProvider authProvider,
+  ) async {
     authProvider.setLoading(true);
 
     User? user = await _authService.signUp(email, password);
@@ -21,7 +25,11 @@ class AuthController {
   }
 
   // Sign in
-  Future<void> signIn(String email, String password, AuthProvider authProvider) async {
+  Future<void> signIn(
+    String email,
+    String password,
+    AuthProvider authProvider,
+  ) async {
     authProvider.setLoading(true);
 
     User? user = await _authService.signIn(email, password);
@@ -40,5 +48,19 @@ class AuthController {
     await _authService.signOut();
     authProvider.setUser(null);
     authProvider.setLoggedIn(false);
+  }
+
+  // Reset Password
+  Future<bool> resetPassword(String email, AuthProvider authProvider) async {
+    authProvider.setLoading(true);
+    try {
+      bool result = await _authService.sendPasswordResetEmail(email);
+      authProvider.setLoading(false);
+      return result;
+    } catch (e) {
+      authProvider.setError("Failed to send reset email: $e");
+      authProvider.setLoading(false);
+      return false;
+    }
   }
 }
