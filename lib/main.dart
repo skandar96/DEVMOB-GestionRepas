@@ -3,16 +3,20 @@ import 'package:provider/provider.dart';
 import 'package:gestionrepas/navigation/routes.dart';
 import 'package:gestionrepas/providers/auth_provider.dart';
 import 'package:gestionrepas/providers/RecipeProvider.dart';
+import 'package:gestionrepas/providers/meal_plan_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  await initializeDateFormatting('fr_FR', null);
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => RecipeProvider()),
+        ChangeNotifierProvider(create: (_) => MealPlanProvider()),
       ],
       child: const MyApp(),
     ),
