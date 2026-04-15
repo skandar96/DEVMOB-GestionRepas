@@ -59,7 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     gradient: const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Color(0xFF7C4DFF), Color(0xFFE040FB)],
+                      colors: [Color(0xFF5D38FF), Color(0xFFEE1289)],
                     ),
                   ),
                   child: ClipRRect(
@@ -192,8 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 borderRadius: BorderRadius.circular(25),
                                 gradient: const LinearGradient(
                                   colors: [
-                                    Color(0xFF7C4DFF),
-                                    Color(0xFFE040FB),
+                                    Color(0xFF5D38FF), Color(0xFFEE1289),
                                   ],
                                 ),
                               ),
@@ -259,7 +258,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ? BoxDecoration(
                   borderRadius: BorderRadius.circular(25),
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF7C4DFF), Color(0xFFE040FB)],
+                    colors: [Color(0xFF5D38FF), Color(0xFFEE1289)],
                   ),
                 )
               : null,

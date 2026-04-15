@@ -114,7 +114,10 @@ class _HomePageState extends State<HomePage> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color.fromARGB(205, 104, 102, 249), Color.fromARGB(237, 174, 83, 249)],
+                colors: [
+                  Color.fromARGB(205, 104, 102, 249),
+                  Color.fromARGB(237, 174, 83, 249),
+                ],
               ),
               borderRadius: BorderRadius.circular(14),
             ),
@@ -252,10 +255,9 @@ class _HomePageState extends State<HomePage> {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: GradientPalette.colors,
-          stops: GradientPalette.stops,
-          begin: Alignment.topCenter,
+        gradient: const LinearGradient(
+          colors: [Color(0xFF5D38FF), Color(0xFFEE1289)],
+          begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),

@@ -1,17 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Palette de couleurs pour les dégradés
-class GradientPalette {
-  static List<Color> colors = [
-    const Color.fromARGB(163, 94, 142, 253).withOpacity(1.0), // Blue
-    const Color.fromARGB(227, 181, 92, 245).withOpacity(1.0), // Purple
-    const Color.fromARGB(230, 254, 126, 192).withOpacity(1.0), // Pink
-  ];
-
-  static const List<double> stops = [0.0, 0.7, 1.0];
-}
-
-/// Widget de header avec dégradé 3 couleurs
+/// Widget de header avec dégradé violet vers rose/magenta
 class GradientHeader extends StatelessWidget {
   final Widget child;
   final EdgeInsets padding;
@@ -22,8 +11,8 @@ class GradientHeader extends StatelessWidget {
     super.key,
     required this.child,
     this.padding = const EdgeInsets.fromLTRB(20, 50, 20, 55),
-    this.begin = Alignment.topCenter,
-    this.end = Alignment.bottomRight,
+    this.begin = Alignment.centerLeft,
+    this.end = Alignment.centerRight,
   });
 
   @override
@@ -31,12 +20,11 @@ class GradientHeader extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: padding,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: GradientPalette.colors,
-          stops: GradientPalette.stops,
-          begin: begin,
-          end: end,
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [Color(0xFF5D38FF), Color(0xFFEE1289)],
         ),
       ),
       child: child,

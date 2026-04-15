@@ -62,7 +62,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     gradient: const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Color(0xFF7C4DFF), Color(0xFFE040FB)],
+                      colors: [Color(0xFF5D38FF), Color(0xFFEE1289)],
                     ),
                   ),
                   child: ClipRRect(
@@ -188,7 +188,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(25),
       gradient: const LinearGradient(
-        colors: [Color(0xFF7C4DFF), Color(0xFFE040FB)],
+        colors: [Color(0xFF5D38FF), Color(0xFFEE1289)],
       ),
     ),
     child: Container(
@@ -254,7 +254,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ? BoxDecoration(
                   borderRadius: BorderRadius.circular(25),
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF7C4DFF), Color(0xFFE040FB)],
+                    colors: [Color(0xFF5D38FF), Color(0xFFEE1289)],
                   ),
                 )
               : null,

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../providers/meal_plan_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../Models/meal_plan.dart';
+import '../../theme/gradient_header.dart';
 import './AssignRecipePage.dart';
 
 class MealCalendarPage extends StatefulWidget {
@@ -60,19 +61,12 @@ class _MealCalendarPageState extends State<MealCalendarPage> {
         child: Column(
           children: [
             // --- HEADER AVEC DÉGRADÉ ---
-            Container(
+            GradientHeader(
               padding: const EdgeInsets.only(
                 top: 50,
                 left: 20,
                 right: 20,
                 bottom: 30,
-              ),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [Color(0xFF5D38FF), Color(0xFFEE1289)],
-                ),
               ),
               child: Column(
                 children: [

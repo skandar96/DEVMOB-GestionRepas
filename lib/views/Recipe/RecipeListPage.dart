@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/RecipeProvider.dart';
 import '../../Models/recipe.dart';
-import '../../theme/gradient_header.dart';
 
 class RecipeListPage extends StatefulWidget {
   const RecipeListPage({super.key});
@@ -141,8 +140,15 @@ class _RecipeListPageState extends State<RecipeListPage> {
   }
 
   Widget _buildAppBar() {
-    return GradientHeader(
+    return Container(
       padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [Color(0xFF5D38FF), Color(0xFFEE1289)],
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
