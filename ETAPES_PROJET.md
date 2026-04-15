@@ -48,7 +48,7 @@
 - servings (int)
 - ingredients (List<Ingredient>)
 - instructions (List<String>)
-- category (RecipeCategory: Petit Déjeuner, Déjeuner, Dîner, Dessert)
+- category (RecipeCategory: Petit Déjeuner, Déjeuner, Dîner)
 - difficulty (Difficulty: Facile, Moyen, Difficile)
 - isFavorite (bool)
 - imageUrl (String?)

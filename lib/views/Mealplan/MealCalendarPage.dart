@@ -21,10 +21,11 @@ class _MealCalendarPageState extends State<MealCalendarPage> {
     super.initState();
     _selectedDate = DateTime.now();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final mealPlanProvider =
-          Provider.of<MealPlanProvider>(context, listen: false);
-      final authProvider =
-          Provider.of<AuthProvider>(context, listen: false);
+      final mealPlanProvider = Provider.of<MealPlanProvider>(
+        context,
+        listen: false,
+      );
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
       mealPlanProvider.setWeekStart(_selectedDate);
       if (authProvider.user != null) {
@@ -36,425 +37,473 @@ class _MealCalendarPageState extends State<MealCalendarPage> {
     });
   }
 
+  String _getMonthYear() {
+    return DateFormat('MMMM yyyy', 'fr_FR').format(_selectedDate).capitalize();
+  }
+
+  String _getDayName() {
+    return DateFormat('EEEE', 'fr_FR').format(_selectedDate).capitalize();
+  }
+
   @override
   Widget build(BuildContext context) {
     final mealPlanProvider = Provider.of<MealPlanProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context);
+    final isToday =
+        _selectedDate.day == DateTime.now().day &&
+        _selectedDate.month == DateTime.now().month &&
+        _selectedDate.year == DateTime.now().year;
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              // Header with week navigation
-              _buildHeader(context, mealPlanProvider),
-
-              // Week calendar selector
-              _buildWeekCalendar(mealPlanProvider),
-
-              // Meal sections
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 16),
-                    _buildMealSection(
-                      context,
-                      'Petit Déjeuner',
-                      '7:00 - 9:00',
-                      MealType.breakfast,
-                      const Color(0xFFFFA500),
-                      mealPlanProvider,
-                      authProvider,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildMealSection(
-                      context,
-                      'Déjeuner',
-                      '12:00 - 13:30',
-                      MealType.lunch,
-                      const Color(0xFF1E88E5),
-                      mealPlanProvider,
-                      authProvider,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildMealSection(
-                      context,
-                      'Dîner',
-                      '19:00 - 20:30',
-                      MealType.dinner,
-                      const Color(0xFFEC4899),
-                      mealPlanProvider,
-                      authProvider,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildMealSection(
-                      context,
-                      'Goûter',
-                      '15:00 - 16:00',
-                      MealType.snack,
-                      const Color(0xFF9C27B0),
-                      mealPlanProvider,
-                      authProvider,
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      '💡 Afficher votre message entre les jours et les jours',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
+      backgroundColor: const Color(0xFFF8F9FE),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // --- HEADER AVEC DÉGRADÉ ---
+            Container(
+              padding: const EdgeInsets.only(
+                top: 50,
+                left: 20,
+                right: 20,
+                bottom: 30,
+              ),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [Color(0xFF5D38FF), Color(0xFFEE1289)],
                 ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(
-      BuildContext context, MealPlanProvider mealPlanProvider) {
-    final startDate = mealPlanProvider.selectedWeekStart;
-
-    String dayName =
-        DateFormat('EEEE', 'fr_FR').format(startDate).capitalize();
-    int dayNum = startDate.day;
-
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF7C4DFF), Color(0xFFE040FB)],
-        ),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.chevron_left, color: Colors.white),
-                onPressed: () {
-                  mealPlanProvider.previousWeek();
-                  final authProvider =
-                      Provider.of<AuthProvider>(context, listen: false);
-                  if (authProvider.user != null) {
-                    final userId = authProvider.user!.id;
-                    if (userId != null) {
-                      mealPlanProvider.fetchMealPlansForWeek(userId);
-                    }
-                  }
-                },
-              ),
-              Column(
-                children: [
-                  const Text(
-                    'Semaine du',
-                    style: TextStyle(color: Colors.white, fontSize: 12),
-                  ),
-                  Text(
-                    '$dayName $dayNum',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              IconButton(
-                icon: const Icon(Icons.chevron_right, color: Colors.white),
-                onPressed: () {
-                  mealPlanProvider.nextWeek();
-                  final authProvider =
-                      Provider.of<AuthProvider>(context, listen: false);
-                  if (authProvider.user != null) {
-                    final userId = authProvider.user!.id;
-                    if (userId != null) {
-                      mealPlanProvider.fetchMealPlansForWeek(userId);
-                    }
-                  }
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Smooth indicator dots
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              for (int i = 0; i < 7; i++)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  child: Container(
-                    width: i == 3 ? 24 : 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(3),
-                      color: Colors.white.withOpacity(
-                        i == 3 ? 1.0 : 0.5,
-                      ),
-                    ),
-                  ),
-                )
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWeekCalendar(MealPlanProvider mealPlanProvider) {
-    final startDate = mealPlanProvider.selectedWeekStart;
-
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: List.generate(7, (index) {
-          final date = startDate.add(Duration(days: index));
-          final isSelected = date.day == _selectedDate.day &&
-              date.month == _selectedDate.month &&
-              date.year == _selectedDate.year;
-
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedDate = date;
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: isSelected
-                    ? const Color(0xFF7C4DFF)
-                    : Colors.grey[200],
               ),
               child: Column(
                 children: [
-                  Text(
-                    DateFormat('E', 'fr_FR')
-                        .format(date)
-                        .substring(0, 3)
-                        .toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected ? Colors.white : Colors.grey[600],
+                  Row(
+                    children: const [
+                      Icon(Icons.calendar_month, color: Colors.white, size: 28),
+                      SizedBox(width: 10),
+                      Text(
+                        "Planning Hebdomadaire",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 25),
+                  // Sélecteur de date central
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          icon: const Icon(
+                            Icons.chevron_left,
+                            color: Colors.white,
+                            size: 30,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _selectedDate = _selectedDate.subtract(
+                                Duration(days: 1),
+                              );
+                            });
+                            mealPlanProvider.setWeekStart(_selectedDate);
+                            if (authProvider.user != null) {
+                              final userId = authProvider.user!.id;
+                              if (userId != null) {
+                                mealPlanProvider.fetchMealPlansForWeek(userId);
+                              }
+                            }
+                          },
+                        ),
+                        Column(
+                          children: [
+                            Text(
+                              _getMonthYear(),
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
+                            ),
+                            Text(
+                              '${_getDayName()} ${_selectedDate.day}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.chevron_right,
+                            color: Colors.white,
+                            size: 30,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _selectedDate = _selectedDate.add(
+                                Duration(days: 1),
+                              );
+                            });
+                            mealPlanProvider.setWeekStart(_selectedDate);
+                            if (authProvider.user != null) {
+                              final userId = authProvider.user!.id;
+                              if (userId != null) {
+                                mealPlanProvider.fetchMealPlansForWeek(userId);
+                              }
+                            }
+                          },
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    date.day.toString().padLeft(2, '0'),
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: isSelected ? Colors.white : Colors.grey[800],
-                    ),
+                  const SizedBox(height: 15),
+                  // Indicateurs de pagination (les points)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(7, (index) {
+                      final startDate = mealPlanProvider.selectedWeekStart;
+                      final date = startDate.add(Duration(days: index));
+                      final isCurrentDay =
+                          date.day == _selectedDate.day &&
+                          date.month == _selectedDate.month &&
+                          date.year == _selectedDate.year;
+                      return Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        width: isCurrentDay ? 25 : 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(
+                            isCurrentDay ? 1 : 0.5,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      );
+                    }),
                   ),
                 ],
               ),
             ),
-          );
-        }),
+
+            // --- CALENDRIER HORIZONTAL ---
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Container(
+                padding: const EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: _buildWeekDays(mealPlanProvider),
+                ),
+              ),
+            ),
+
+            // Badge "Aujourd'hui"
+            if (isToday)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00C853),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        CircleAvatar(radius: 3, backgroundColor: Colors.white),
+                        SizedBox(width: 5),
+                        Text(
+                          "Aujourd'hui",
+                          style: TextStyle(color: Colors.white, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+            // --- SECTIONS DE REPAS ---
+            _buildMealSection(
+              context,
+              title: "Petit Déjeuner",
+              time: "07:00 - 09:00",
+              color: const Color(0xFFFFA000),
+              icon: Icons.wb_twilight,
+              mealType: MealType.breakfast,
+              mealPlanProvider: mealPlanProvider,
+              authProvider: authProvider,
+            ),
+            _buildMealSection(
+              context,
+              title: "Déjeuner",
+              time: "12:00 - 14:00",
+              color: const Color(0xFF03A9F4),
+              icon: Icons.wb_sunny,
+              mealType: MealType.lunch,
+              mealPlanProvider: mealPlanProvider,
+              authProvider: authProvider,
+            ),
+            _buildMealSection(
+              context,
+              title: "Dîner",
+              time: "19:00 - 21:00",
+              color: const Color(0xFFE91E63),
+              icon: Icons.nightlight_round,
+              mealType: MealType.dinner,
+              mealPlanProvider: mealPlanProvider,
+              authProvider: authProvider,
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildMealSection(
-    BuildContext context,
-    String title,
-    String time,
-    MealType mealType,
-    Color color,
-    MealPlanProvider mealPlanProvider,
-    AuthProvider authProvider,
-  ) {
-    final meal =
-        mealPlanProvider.getMealForDateAndType(_selectedDate, mealType);
+  List<Widget> _buildWeekDays(MealPlanProvider mealPlanProvider) {
+    final startDate = mealPlanProvider.selectedWeekStart;
+    final days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
+    return List.generate(7, (index) {
+      final date = startDate.add(Duration(days: index));
+      final isSelected =
+          date.day == _selectedDate.day &&
+          date.month == _selectedDate.month &&
+          date.year == _selectedDate.year;
+
+      return GestureDetector(
+        onTap: () {
+          setState(() {
+            _selectedDate = date;
+          });
+        },
+        child: _buildDayItem(days[index], date.day.toString(), isSelected),
+      );
+    });
+  }
+
+  Widget _buildDayItem(String day, String date, bool isSelected) {
     return Column(
       children: [
-        // Header - Time and status
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(16),
-              topRight: Radius.circular(16),
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    time,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-              if (meal != null)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    '✓ Planifiée',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                )
-            ],
+        Text(
+          day,
+          style: TextStyle(
+            color: isSelected ? Colors.indigo : Colors.grey,
+            fontSize: 12,
           ),
         ),
-
-        // Content
+        const SizedBox(height: 8),
         Container(
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(16),
-              bottomRight: Radius.circular(16),
+            color: isSelected ? const Color(0xFF7B61FF) : Colors.transparent,
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: Colors.blue.withOpacity(0.3),
+                      blurRadius: 8,
+                    ),
+                  ]
+                : [],
+          ),
+          child: Text(
+            date,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.black87,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          padding: const EdgeInsets.all(12),
-          child: meal == null
-              ? _buildAddMealButton(context, mealType, authProvider)
-              : _buildMealContent(
-                  context, meal, mealType, mealPlanProvider, authProvider),
         ),
       ],
     );
   }
 
-  Widget _buildAddMealButton(
-      BuildContext context, MealType mealType, AuthProvider authProvider) {
-    IconData icon;
-    switch (mealType) {
-      case MealType.breakfast:
-        icon = Icons.breakfast_dining;
-        break;
-      case MealType.lunch:
-        icon = Icons.lunch_dining;
-        break;
-      case MealType.dinner:
-        icon = Icons.dinner_dining;
-        break;
-      case MealType.snack:
-        icon = Icons.icecream;
-        break;
-    }
+  Widget _buildMealSection(
+    BuildContext context, {
+    required String title,
+    required String time,
+    required Color color,
+    required IconData icon,
+    required MealType mealType,
+    required MealPlanProvider mealPlanProvider,
+    required AuthProvider authProvider,
+  }) {
+    final meal = mealPlanProvider.getMealForDateAndType(
+      _selectedDate,
+      mealType,
+    );
 
-    return SizedBox(
-      width: double.infinity,
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(25),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+        ],
+      ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 32, color: Colors.grey[400]),
-          const SizedBox(height: 8),
-          const Text(
-            'Ajouter un repas',
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Sélectionner une recette pour ajouter',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey[500],
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 40,
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => AssignRecipePage(
-                      date: _selectedDate,
-                      mealType: mealType,
-                    ),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Ajouter'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.grey[800],
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+          // En-tête coloré du repas
+          Container(
+            padding: const EdgeInsets.all(15),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(25),
+                topRight: Radius.circular(25),
               ),
             ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 20),
+                ),
+                const SizedBox(width: 15),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      time,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          // Zone "Ajouter un repas" ou affichage du repas
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: meal == null
+                ? _buildAddMealButtonNew(context, mealType, color)
+                : _buildMealContentNew(
+                    context,
+                    meal,
+                    mealType,
+                    mealPlanProvider,
+                    authProvider,
+                    color,
+                  ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildMealContent(
+  Widget _buildAddMealButtonNew(
+    BuildContext context,
+    MealType mealType,
+    Color color,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 30),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color.withOpacity(0.7), color],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      AssignRecipePage(date: _selectedDate, mealType: mealType),
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: const Icon(Icons.add, color: Colors.white, size: 30),
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            "Ajouter un repas",
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          const Text(
+            "Choisissez une recette pour ce repas",
+            style: TextStyle(color: Colors.white70, fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMealContentNew(
     BuildContext context,
     MealPlan meal,
     MealType mealType,
     MealPlanProvider mealPlanProvider,
     AuthProvider authProvider,
+    Color color,
   ) {
     return Column(
       children: [
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: color.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
             children: [
-              Icon(
-                Icons.restaurant_menu,
-                color: Colors.grey[600],
-                size: 24,
-              ),
+              Icon(Icons.restaurant_menu, color: color, size: 24),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -470,10 +519,7 @@ class _MealCalendarPageState extends State<MealCalendarPage> {
                     ),
                     Text(
                       '${meal.servings} portion${meal.servings > 1 ? 's' : ''}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -496,13 +542,13 @@ class _MealCalendarPageState extends State<MealCalendarPage> {
                             mealPlanProvider.deleteMealPlan(meal.id);
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Repas supprimé'),
-                              ),
+                              const SnackBar(content: Text('Repas supprimé')),
                             );
                           },
-                          child: const Text('Supprimer',
-                              style: TextStyle(color: Colors.red)),
+                          child: const Text(
+                            'Supprimer',
+                            style: TextStyle(color: Colors.red),
+                          ),
                         ),
                       ],
                     ),

@@ -20,7 +20,6 @@ class _RecipeListPageState extends State<RecipeListPage> {
     'Petit Déjeuner',
     'Déjeuner',
     'Dîner',
-    'Dessert',
   ];
 
   @override

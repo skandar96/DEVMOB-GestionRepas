@@ -40,8 +40,10 @@ class _AssignRecipePageState extends State<AssignRecipePage> {
   Widget build(BuildContext context) {
     final recipeProvider = Provider.of<RecipeProvider>(context);
     final mealTypeLabel = _getMealTypeLabel(widget.mealType);
-    final dateFormatted =
-        DateFormat('EEEE dd MMMM', 'fr_FR').format(widget.date);
+    final dateFormatted = DateFormat(
+      'EEEE dd MMMM',
+      'fr_FR',
+    ).format(widget.date);
 
     return Scaffold(
       appBar: AppBar(
@@ -69,10 +71,7 @@ class _AssignRecipePageState extends State<AssignRecipePage> {
                 const SizedBox(height: 4),
                 Text(
                   dateFormatted,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -147,8 +146,11 @@ class _AssignRecipePageState extends State<AssignRecipePage> {
                                     const SizedBox(height: 4),
                                     Row(
                                       children: [
-                                        Icon(Icons.timer_outlined,
-                                            size: 14, color: Colors.grey),
+                                        Icon(
+                                          Icons.timer_outlined,
+                                          size: 14,
+                                          color: Colors.grey,
+                                        ),
                                         const SizedBox(width: 4),
                                         Text(
                                           '${recipe.preparationTime} min',
@@ -158,8 +160,11 @@ class _AssignRecipePageState extends State<AssignRecipePage> {
                                           ),
                                         ),
                                         const SizedBox(width: 12),
-                                        Icon(Icons.people_outlined,
-                                            size: 14, color: Colors.grey),
+                                        Icon(
+                                          Icons.people_outlined,
+                                          size: 14,
+                                          color: Colors.grey,
+                                        ),
                                         const SizedBox(width: 4),
                                         Text(
                                           '${recipe.servings}',
@@ -200,8 +205,9 @@ class _AssignRecipePageState extends State<AssignRecipePage> {
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                border:
-                    Border(top: BorderSide(color: Colors.grey[300]!, width: 1)),
+                border: Border(
+                  top: BorderSide(color: Colors.grey[300]!, width: 1),
+                ),
               ),
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -283,8 +289,10 @@ class _AssignRecipePageState extends State<AssignRecipePage> {
       return;
     }
 
-    final mealPlanProvider =
-        Provider.of<MealPlanProvider>(context, listen: false);
+    final mealPlanProvider = Provider.of<MealPlanProvider>(
+      context,
+      listen: false,
+    );
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     if (authProvider.user == null) {
@@ -350,10 +358,7 @@ class _AssignRecipePageState extends State<AssignRecipePage> {
           Text(
             'Ajoutez d\'abord une recette',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
           ),
         ],
       ),
@@ -368,8 +373,6 @@ class _AssignRecipePageState extends State<AssignRecipePage> {
         return 'Déjeuner';
       case MealType.dinner:
         return 'Dîner';
-      case MealType.snack:
-        return 'Goûter';
     }
   }
 }

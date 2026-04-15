@@ -1,4 +1,4 @@
-enum MealType { breakfast, lunch, dinner, snack }
+enum MealType { breakfast, lunch, dinner }
 
 class MealPlan {
   final String id;
