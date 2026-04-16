@@ -6,6 +6,7 @@ import '../../providers/RecipeProvider.dart';
 import '../../providers/meal_plan_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../Models/meal_plan.dart';
+import '../../Models/Recipe.dart';
 
 class AssignRecipePage extends StatefulWidget {
   final DateTime date;
@@ -34,6 +35,23 @@ class _AssignRecipePageState extends State<AssignRecipePage> {
     _servings = widget.mealPlan?.servings ?? 1;
     _selectedRecipeId = widget.mealPlan?.recipeId;
     _selectedRecipeName = widget.mealPlan?.recipeName;
+
+    // Load recipes if not already loaded
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final recipeProvider = Provider.of<RecipeProvider>(
+        context,
+        listen: false,
+      );
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+      if (recipeProvider.recipes.isEmpty && authProvider.user != null) {
+        final userId = authProvider.user!.id;
+        if (userId != null) {
+          recipeProvider.setUserId(userId);
+          recipeProvider.loadRecipes();
+        }
+      }
+    });
   }
 
   @override
@@ -79,125 +97,138 @@ class _AssignRecipePageState extends State<AssignRecipePage> {
 
           // Recipe list
           Expanded(
-            child: recipeProvider.recipes.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-                    padding: const EdgeInsets.all(12),
-                    itemCount: recipeProvider.recipes.length,
-                    itemBuilder: (context, index) {
-                      final recipe = recipeProvider.recipes[index];
-                      final isSelected = _selectedRecipeId == recipe.id;
+            child: Builder(
+              builder: (context) {
+                // Filter recipes by meal type category
+                final targetCategory = _getRecipeCategoryFromMealType(
+                  widget.mealType,
+                );
+                final filteredRecipes = recipeProvider.recipes
+                    .where((recipe) => recipe.category == targetCategory)
+                    .toList();
 
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _selectedRecipeId = recipe.id;
-                            _selectedRecipeName = recipe.name;
-                          });
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            border: Border.all(
-                              color: isSelected
-                                  ? const Color(0xFF7C4DFF)
-                                  : Colors.grey[300]!,
-                              width: isSelected ? 2 : 1,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              // Recipe image or icon
-                              Container(
-                                width: 60,
-                                height: 60,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(8),
+                return filteredRecipes.isEmpty
+                    ? _buildEmptyState()
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(12),
+                        itemCount: filteredRecipes.length,
+                        itemBuilder: (context, index) {
+                          final recipe = filteredRecipes[index];
+                          final isSelected = _selectedRecipeId == recipe.id;
+
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedRecipeId = recipe.id;
+                                _selectedRecipeName = recipe.name;
+                              });
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border.all(
+                                  color: isSelected
+                                      ? const Color(0xFF7C4DFF)
+                                      : Colors.grey[300]!,
+                                  width: isSelected ? 2 : 1,
                                 ),
-                                child: recipe.imageUrl != null
-                                    ? Image.network(
-                                        recipe.imageUrl!,
-                                        fit: BoxFit.cover,
-                                      )
-                                    : Icon(
-                                        Icons.restaurant,
-                                        color: Colors.grey[400],
-                                      ),
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              const SizedBox(width: 12),
-
-                              // Recipe info
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      recipe.name,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.black87,
-                                      ),
+                              child: Row(
+                                children: [
+                                  // Recipe image or icon
+                                  Container(
+                                    width: 60,
+                                    height: 60,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[200],
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
-                                    const SizedBox(height: 4),
-                                    Row(
+                                    child: recipe.imageUrl != null
+                                        ? Image.network(
+                                            recipe.imageUrl!,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Icon(
+                                            Icons.restaurant,
+                                            color: Colors.grey[400],
+                                          ),
+                                  ),
+                                  const SizedBox(width: 12),
+
+                                  // Recipe info
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        Icon(
-                                          Icons.timer_outlined,
-                                          size: 14,
-                                          color: Colors.grey,
-                                        ),
-                                        const SizedBox(width: 4),
                                         Text(
-                                          '${recipe.preparationTime} min',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color: Colors.grey[600],
+                                          recipe.name,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.black87,
                                           ),
                                         ),
-                                        const SizedBox(width: 12),
-                                        Icon(
-                                          Icons.people_outlined,
-                                          size: 14,
-                                          color: Colors.grey,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          '${recipe.servings}',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color: Colors.grey[600],
-                                          ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.timer_outlined,
+                                              size: 14,
+                                              color: Colors.grey,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              '${recipe.preparationTime} min',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.grey[600],
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Icon(
+                                              Icons.people_outlined,
+                                              size: 14,
+                                              color: Colors.grey,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              '${recipe.servings}',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.grey[600],
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
-                                  ],
-                                ),
-                              ),
+                                  ),
 
-                              // Selection indicator
-                              if (isSelected)
-                                const Icon(
-                                  Icons.check_circle,
-                                  color: Color(0xFF7C4DFF),
-                                  size: 24,
-                                )
-                              else
-                                const Icon(
-                                  Icons.radio_button_unchecked,
-                                  color: Colors.grey,
-                                  size: 24,
-                                ),
-                            ],
-                          ),
-                        ),
+                                  // Selection indicator
+                                  if (isSelected)
+                                    const Icon(
+                                      Icons.check_circle,
+                                      color: Color(0xFF7C4DFF),
+                                      size: 24,
+                                    )
+                                  else
+                                    const Icon(
+                                      Icons.radio_button_unchecked,
+                                      color: Colors.grey,
+                                      size: 24,
+                                    ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
                       );
-                    },
-                  ),
+              },
+            ),
           ),
 
           // Bottom section with servings and add button
@@ -373,6 +404,17 @@ class _AssignRecipePageState extends State<AssignRecipePage> {
         return 'Déjeuner';
       case MealType.dinner:
         return 'Dîner';
+    }
+  }
+
+  RecipeCategory _getRecipeCategoryFromMealType(MealType mealType) {
+    switch (mealType) {
+      case MealType.breakfast:
+        return RecipeCategory.petitDejeuner;
+      case MealType.lunch:
+        return RecipeCategory.dejeuner;
+      case MealType.dinner:
+        return RecipeCategory.diner;
     }
   }
 }

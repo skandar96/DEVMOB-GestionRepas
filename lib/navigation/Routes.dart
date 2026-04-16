@@ -3,7 +3,7 @@ import '../views/Auth/RegisterPage .dart';
 import '../views/Auth/LoginPage.dart';
 import '../views/Auth/ForgotPasswordPage.dart';
 import '../views/Home/main_screen.dart';
-import '../Models/recipe.dart';
+import '../Models/Recipe.dart';
 import '../views/Recipe/AddRecipePage.dart';
 import '../views/Recipe/RecipeDetailPage.dart';
 

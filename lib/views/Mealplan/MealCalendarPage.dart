@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../providers/meal_plan_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/RecipeProvider.dart';
 import '../../Models/meal_plan.dart';
 import '../../theme/gradient_header.dart';
 import './AssignRecipePage.dart';
@@ -26,6 +27,10 @@ class _MealCalendarPageState extends State<MealCalendarPage> {
         context,
         listen: false,
       );
+      final recipeProvider = Provider.of<RecipeProvider>(
+        context,
+        listen: false,
+      );
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
       mealPlanProvider.setWeekStart(_selectedDate);
@@ -33,6 +38,8 @@ class _MealCalendarPageState extends State<MealCalendarPage> {
         final userId = authProvider.user!.id;
         if (userId != null) {
           mealPlanProvider.fetchMealPlansForWeek(userId);
+          recipeProvider.setUserId(userId);
+          recipeProvider.loadRecipes();
         }
       }
     });

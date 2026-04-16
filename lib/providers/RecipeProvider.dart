@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../Models/recipe.dart';
+import '../Models/Recipe.dart';
 import '../services/RecipeService.dart';
 
 class RecipeProvider with ChangeNotifier {
