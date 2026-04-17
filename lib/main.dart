@@ -4,6 +4,7 @@ import 'package:gestionrepas/navigation/routes.dart';
 import 'package:gestionrepas/providers/auth_provider.dart';
 import 'package:gestionrepas/providers/RecipeProvider.dart';
 import 'package:gestionrepas/providers/meal_plan_provider.dart';
+import 'package:gestionrepas/providers/ShoppingListProvider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -17,6 +18,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => RecipeProvider()),
         ChangeNotifierProvider(create: (_) => MealPlanProvider()),
+        ChangeNotifierProvider(create: (_) => ShoppingListProvider()),
       ],
       child: const MyApp(),
     ),
