@@ -5,7 +5,6 @@ import '../../providers/auth_provider.dart';
 import '../../providers/RecipeProvider.dart';
 import '../../providers/meal_plan_provider.dart';
 import '../../Models/ShoppingItem.dart';
-import '../../Models/ingredient.dart';
 import '../../Models/Recipe.dart';
 import '../../services/shopping_list_generator.dart';
 
@@ -20,6 +19,10 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
   late TextEditingController _itemNameController;
   late TextEditingController _quantityController;
   late TextEditingController _searchController;
+  MealPlanProvider? _mealPlanProvider;
+  RecipeProvider? _recipeProvider;
+  bool _isAutoSyncing = false;
+  String _lastSyncSignature = '';
   String _selectedUnit = 'pièce';
   String _selectedCategory = 'Autres';
 
@@ -55,18 +58,24 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
     _quantityController = TextEditingController(text: '1');
     _searchController = TextEditingController();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final shoppingProvider = Provider.of<ShoppingListProvider>(
         context,
         listen: false,
       );
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _mealPlanProvider = Provider.of<MealPlanProvider>(context, listen: false);
+      _recipeProvider = Provider.of<RecipeProvider>(context, listen: false);
+
+      _mealPlanProvider?.addListener(_onMealPlanOrRecipeChanged);
+      _recipeProvider?.addListener(_onMealPlanOrRecipeChanged);
 
       if (authProvider.user != null) {
         final userId = authProvider.user!.id;
         if (userId != null) {
           shoppingProvider.setUserId(userId);
-          shoppingProvider.loadShoppingItems();
+          await shoppingProvider.loadShoppingItems();
+          await _syncShoppingListFromMealPlan(force: true);
         }
       }
     });
@@ -74,10 +83,92 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
 
   @override
   void dispose() {
+    _mealPlanProvider?.removeListener(_onMealPlanOrRecipeChanged);
+    _recipeProvider?.removeListener(_onMealPlanOrRecipeChanged);
     _itemNameController.dispose();
     _quantityController.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _onMealPlanOrRecipeChanged() {
+    _syncShoppingListFromMealPlan();
+  }
+
+  String _buildSyncSignature(List<dynamic> mealPlans, List<Recipe> recipes) {
+    final mealPlanSignature = mealPlans
+        .map(
+          (m) =>
+              '${m.id}|${m.recipeId}|${m.date.toIso8601String()}|${m.mealType.index}|${m.servings}',
+        )
+        .join(';');
+
+    final recipeSignature = recipes
+        .map((r) => '${r.id}|${r.ingredients.length}')
+        .join(';');
+
+    return '$mealPlanSignature||$recipeSignature';
+  }
+
+  Future<void> _syncShoppingListFromMealPlan({bool force = false}) async {
+    if (!mounted || _isAutoSyncing) return;
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final shoppingProvider = Provider.of<ShoppingListProvider>(
+      context,
+      listen: false,
+    );
+
+    if (authProvider.user?.id == null) return;
+
+    final mealPlans = _mealPlanProvider?.mealPlans ?? [];
+    final recipes = _recipeProvider?.recipes ?? <Recipe>[];
+    final signature = _buildSyncSignature(mealPlans, recipes);
+
+    if (!force && signature == _lastSyncSignature) return;
+
+    _isAutoSyncing = true;
+    try {
+      final ingredientsWithMealType = <Map<String, dynamic>>[];
+
+      for (final mealPlan in mealPlans) {
+        if (mealPlan.recipeId != null) {
+          Recipe? recipe;
+          try {
+            recipe = recipes.firstWhere((r) => r.id == mealPlan.recipeId);
+          } catch (_) {
+            recipe = null;
+          }
+
+          if (recipe != null) {
+            for (final ingredient in recipe.ingredients) {
+              ingredientsWithMealType.add({
+                'ingredient': ingredient,
+                'mealType': mealPlan.mealType.index,
+              });
+            }
+          }
+        }
+      }
+
+      await shoppingProvider.clearAllItems();
+
+      if (ingredientsWithMealType.isNotEmpty) {
+        final shoppingItems =
+            ShoppingListGenerator.generateFromIngredientsWithMealType(
+              ingredientsWithMealType,
+              authProvider.user!.id!,
+              categoryMapper: ShoppingListGenerator.categorizeIngredient,
+            );
+        await shoppingProvider.addMultipleItems(shoppingItems);
+      }
+
+      _lastSyncSignature = signature;
+    } catch (e) {
+      debugPrint('Erreur sync auto liste de courses: $e');
+    } finally {
+      _isAutoSyncing = false;
+    }
   }
 
   void _addItem() async {
@@ -122,101 +213,20 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
     }
   }
 
-  void _generateFromMealPlan() async {
-    try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final mealPlanProvider = Provider.of<MealPlanProvider>(
-        context,
-        listen: false,
-      );
-      final recipeProvider = Provider.of<RecipeProvider>(
-        context,
-        listen: false,
-      );
-      final shoppingProvider = Provider.of<ShoppingListProvider>(
-        context,
-        listen: false,
-      );
-
-      if (authProvider.user?.id == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Vous devez être connecté')),
-        );
-        return;
-      }
-
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          content: Row(
-            children: const [
-              CircularProgressIndicator(),
-              SizedBox(width: 16),
-              Expanded(child: Text('Génération en cours...')),
-            ],
-          ),
-        ),
-      );
-
-      final mealPlans = mealPlanProvider.mealPlans;
-      final allIngredients = <Ingredient>[];
-
-      for (final mealPlan in mealPlans) {
-        if (mealPlan.recipeId != null) {
-          Recipe? recipe;
-          try {
-            recipe = recipeProvider.recipes.firstWhere(
-              (r) => r.id == mealPlan.recipeId,
-            );
-          } catch (e) {
-            recipe = null;
-          }
-
-          if (recipe != null) {
-            allIngredients.addAll(recipe.ingredients);
-          }
-        }
-      }
-
-      if (allIngredients.isEmpty) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Aucune recette trouvée pour cette semaine'),
-          ),
-        );
-        return;
-      }
-
-      final shoppingItems = ShoppingListGenerator.generateFromIngredients(
-        allIngredients,
-        authProvider.user!.id!,
-        categoryMapper: ShoppingListGenerator.categorizeIngredient,
-      );
-
-      await shoppingProvider.addMultipleItems(shoppingItems);
-
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${shoppingItems.length} articles ajoutés')),
-      );
-    } catch (e) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
-    }
-  }
-
-  Map<String, List<ShoppingItem>> _getGroupedItems(List<ShoppingItem> items) {
-    final grouped = <String, List<ShoppingItem>>{};
+  Map<int, List<ShoppingItem>> _getGroupedItemsByMealType(
+    List<ShoppingItem> items,
+  ) {
+    final grouped = <int, List<ShoppingItem>>{};
     for (final item in items) {
-      final category = item.category ?? 'Autres';
-      grouped.putIfAbsent(category, () => []);
-      grouped[category]!.add(item);
+      final mealType = item.mealType ?? 1; // Par défaut Déjeuner
+      grouped.putIfAbsent(mealType, () => []);
+      grouped[mealType]!.add(item);
     }
-    return grouped;
+    // Trier par mealType (0 = Petit déj, 1 = Déj, 2 = Dîner)
+    final sortedKeys = grouped.keys.toList()..sort();
+    return Map.fromEntries(
+      sortedKeys.map((key) => MapEntry(key, grouped[key]!)),
+    );
   }
 
   @override
@@ -233,10 +243,10 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
             ...shoppingProvider.unpurchasedItems,
             ...shoppingProvider.purchasedItems,
           ];
-          final groupedItems = _getGroupedItems(allItems);
+          final groupedByMealType = _getGroupedItemsByMealType(allItems);
           final totalItems = shoppingProvider.totalItems;
           final purchasedItems = shoppingProvider.purchasedCount;
-          final categoriesCount = groupedItems.length;
+          final mealsCount = groupedByMealType.length;
 
           return CustomScrollView(
             slivers: [
@@ -289,10 +299,13 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
                                     value: totalItems == 0
                                         ? 0
                                         : purchasedItems / totalItems,
-                                    backgroundColor: Colors.white.withOpacity(0.2),
-                                    valueColor: const AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
+                                    backgroundColor: Colors.white.withOpacity(
+                                      0.2,
                                     ),
+                                    valueColor:
+                                        const AlwaysStoppedAnimation<Color>(
+                                          Colors.white,
+                                        ),
                                     strokeWidth: 6,
                                   ),
                                 ),
@@ -327,33 +340,8 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
                 ),
               ),
 
-              // Bouton Régénérer
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: TextButton.icon(
-                    onPressed: _generateFromMealPlan,
-                    icon: const Icon(Icons.sync, color: Colors.grey),
-                    label: const Text(
-                      'Régénérer',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                    style: TextButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
               // Liste des catégories
-              if (groupedItems.isEmpty)
+              if (groupedByMealType.isEmpty)
                 SliverToBoxAdapter(
                   child: Center(
                     child: Padding(
@@ -383,24 +371,21 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final entry = groupedItems.entries.elementAt(index);
-                        final category = entry.key;
-                        final items = entry.value;
-                        final categoryColor = _getCategoryColor(category);
-                        final categoryIcon = _getCategoryIcon(category);
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final entry = groupedByMealType.entries.elementAt(index);
+                      final mealType = entry.key;
+                      final items = entry.value;
+                      final mealTypeData = _getMealTypeData(mealType);
 
-                        return _buildCategoryCard(
-                          category: category,
-                          items: items,
-                          color: categoryColor,
-                          icon: categoryIcon,
-                          shoppingProvider: shoppingProvider,
-                        );
-                      },
-                      childCount: groupedItems.length,
-                    ),
+                      return _buildMealTypeCard(
+                        mealType: mealType,
+                        items: items,
+                        color: mealTypeData['color'] as Color,
+                        gradient: mealTypeData['gradient'] as LinearGradient,
+                        label: mealTypeData['label'] as String,
+                        shoppingProvider: shoppingProvider,
+                      );
+                    }, childCount: groupedByMealType.length),
                   ),
                 ),
 
@@ -414,10 +399,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
                       gradient: const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [
-                          Color(0xFF8B5CF6),
-                          Color(0xFF7C3AED),
-                        ],
+                        colors: [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
                       ),
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -445,8 +427,8 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
                               label: 'Restants',
                             ),
                             _buildRecapItem(
-                              value: '$categoriesCount',
-                              label: 'Catégories',
+                              value: '$mealsCount',
+                              label: 'Repas',
                             ),
                           ],
                         ),
@@ -469,11 +451,12 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
     );
   }
 
-  Widget _buildCategoryCard({
-    required String category,
+  Widget _buildMealTypeCard({
+    required int mealType,
     required List<ShoppingItem> items,
     required Color color,
-    required IconData icon,
+    required LinearGradient gradient,
+    required String label,
     required ShoppingListProvider shoppingProvider,
   }) {
     return Container(
@@ -491,11 +474,11 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
       ),
       child: Column(
         children: [
-          // Header de catégorie
+          // Header de mealType avec gradient
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: color,
+              gradient: gradient,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(20),
                 topRight: Radius.circular(20),
@@ -503,10 +486,8 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
             ),
             child: Row(
               children: [
-                Icon(icon, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
                 Text(
-                  category,
+                  label,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
@@ -515,7 +496,10 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.25),
                     borderRadius: BorderRadius.circular(12),
@@ -530,10 +514,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Icon(
-                  Icons.keyboard_arrow_up,
-                  color: Colors.white70,
-                ),
+                const Icon(Icons.keyboard_arrow_up, color: Colors.white70),
               ],
             ),
           ),
@@ -551,7 +532,10 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
     );
   }
 
-  Widget _buildItemRow(ShoppingItem item, ShoppingListProvider shoppingProvider) {
+  Widget _buildItemRow(
+    ShoppingItem item,
+    ShoppingListProvider shoppingProvider,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -572,16 +556,10 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
                       : const Color(0xFF8B5CF6),
                   width: 2,
                 ),
-                color: item.isPurchased
-                    ? Colors.grey[400]
-                    : Colors.transparent,
+                color: item.isPurchased ? Colors.grey[400] : Colors.transparent,
               ),
               child: item.isPurchased
-                  ? const Icon(
-                      Icons.check,
-                      size: 16,
-                      color: Colors.white,
-                    )
+                  ? const Icon(Icons.check, size: 16, color: Colors.white)
                   : null,
             ),
           ),
@@ -596,9 +574,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: item.isPurchased
-                        ? Colors.grey[400]
-                        : Colors.black87,
+                    color: item.isPurchased ? Colors.grey[400] : Colors.black87,
                     decoration: item.isPurchased
                         ? TextDecoration.lineThrough
                         : null,
@@ -606,26 +582,19 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
                 ),
                 Text(
                   '${item.quantity} ${item.unit}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[500],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                 ),
               ],
             ),
           ),
           // Bouton supprimer
           IconButton(
-            icon: Icon(
-              Icons.delete_outline,
-              color: Colors.grey[400],
-              size: 20,
-            ),
+            icon: Icon(Icons.delete_outline, color: Colors.grey[400], size: 20),
             onPressed: () {
               shoppingProvider.deleteItem(item.id);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Article supprimé')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Article supprimé')));
             },
           ),
         ],
@@ -647,10 +616,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.8),
-            fontSize: 12,
-          ),
+          style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12),
         ),
       ],
     );
@@ -692,10 +658,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
             const SizedBox(height: 20),
             const Text(
               'Ajouter un article',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             TextField(
@@ -778,10 +741,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
                   hint: const Text('Catégorie'),
                   items: _categories
                       .map(
-                        (cat) => DropdownMenuItem(
-                          value: cat,
-                          child: Text(cat),
-                        ),
+                        (cat) => DropdownMenuItem(value: cat, child: Text(cat)),
                       )
                       .toList(),
                   onChanged: (value) {
@@ -818,53 +778,57 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
     );
   }
 
-  Color _getCategoryColor(String category) {
-    switch (category.toLowerCase()) {
-      case 'fruits':
-        return const Color(0xFFFF6B6B);
-      case 'légumes':
-        return const Color(0xFF51CF66);
-      case 'viande':
-        return const Color(0xFFBD5E3E);
-      case 'poisson':
-        return const Color(0xFF4E7BAF);
-      case 'produits laitiers':
-        return const Color(0xFF748CCC);
-      case 'œufs':
-        return const Color(0xFFF4A25E);
-      case 'pain & céréales':
-        return const Color(0xFFBF9D5D);
-      case 'épicerie':
-        return const Color(0xFFFFA500);
-      case 'boissons':
-        return const Color(0xFF6C5CE7);
+  Map<String, dynamic> _getMealTypeData(int mealType) {
+    switch (mealType) {
+      case 0: // Petit Déjeuner
+        return {
+          'label': 'Petit déjeuner ☀️',
+          'color': const Color(0xFFF59E0B),
+          'gradient': const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFFCD34D), // Jaune clair
+              Color(0xFFF59E0B), // Ambre
+            ],
+          ),
+        };
+      case 1: // Déjeuner
+        return {
+          'label': 'Déjeuner 🍽️',
+          'color': const Color(0xFF06B6D4),
+          'gradient': const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF0EA5E9), // Bleu clair
+              Color(0xFF06B6D4), // Cyan
+            ],
+          ),
+        };
+      case 2: // Dîner
+        return {
+          'label': 'Dîner 🌙',
+          'color': const Color(0xFF8B5CF6),
+          'gradient': const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xA78B5CF6), // Indigo
+              Color(0xFF7C3AED), // Violet
+            ],
+          ),
+        };
       default:
-        return const Color(0xFF95A5A6);
-    }
-  }
-
-  IconData _getCategoryIcon(String category) {
-    switch (category.toLowerCase()) {
-      case 'fruits':
-        return Icons.apple_outlined;
-      case 'légumes':
-        return Icons.eco;
-      case 'viande':
-        return Icons.lunch_dining;
-      case 'poisson':
-        return Icons.set_meal;
-      case 'produits laitiers':
-        return Icons.icecream;
-      case 'œufs':
-        return Icons.egg_alt;
-      case 'pain & céréales':
-        return Icons.bakery_dining;
-      case 'épicerie':
-        return Icons.shopping_bag;
-      case 'boissons':
-        return Icons.local_drink;
-      default:
-        return Icons.category;
+        return {
+          'label': 'Non spécifié',
+          'color': const Color(0xFF95A5A6),
+          'gradient': const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFBDC3C7), Color(0xFF95A5A6)],
+          ),
+        };
     }
   }
 }

@@ -2,6 +2,78 @@ import '../Models/ShoppingItem.dart';
 import '../Models/ingredient.dart';
 
 class ShoppingListGenerator {
+  /// Convertit une liste d'ingrédients avec mealType en articles de shopping
+  /// Agrège les ingrédients par nom et mealType, et additionne les quantités
+  static List<ShoppingItem> generateFromIngredientsWithMealType(
+    List<Map<String, dynamic>> ingredientsWithMealType,
+    String userId, {
+    String Function(String)? categoryMapper,
+  }) {
+    // Grouper les ingrédients par nom et mealType (insensible à la casse)
+    final Map<String, Map<String, dynamic>> aggregated = {};
+
+    for (final data in ingredientsWithMealType) {
+      final ingredient = data['ingredient'] as Ingredient;
+      final mealType = data['mealType'] as int;
+      final key = '${ingredient.name.toLowerCase().trim()}_$mealType';
+
+      if (aggregated.containsKey(key)) {
+        // Si l'ingrédient existe déjà, additionner les quantités
+        final existing = aggregated[key]!;
+        final existingQty =
+            double.tryParse(existing['quantity'] as String) ?? 1.0;
+        final newQty = double.tryParse(ingredient.quantity) ?? 1.0;
+
+        // Si les unités sont les mêmes, additionner
+        if (existing['unit'] == ingredient.unit) {
+          existing['quantity'] = (existingQty + newQty).toString();
+        } else {
+          // Si les unités sont différentes, créer un nouvel article
+          aggregated['${key}_${ingredient.unit}'] = {
+            'name': ingredient.name,
+            'quantity': ingredient.quantity,
+            'unit': ingredient.unit,
+            'mealType': mealType,
+          };
+        }
+      } else {
+        aggregated[key] = {
+          'name': ingredient.name,
+          'quantity': ingredient.quantity,
+          'unit': ingredient.unit,
+          'mealType': mealType,
+        };
+      }
+    }
+
+    // Convertir en ShoppingItems
+    final shoppingItems = <ShoppingItem>[];
+    for (final entry in aggregated.entries) {
+      final data = entry.value;
+      final quantity = double.tryParse(data['quantity'] as String) ?? 1.0;
+
+      // Déterminer la catégorie
+      String category = 'Autres';
+      if (categoryMapper != null) {
+        category = categoryMapper(data['name'] as String);
+      }
+
+      shoppingItems.add(
+        ShoppingItem(
+          userId: userId,
+          name: data['name'] as String,
+          quantity: quantity,
+          unit: data['unit'] as String,
+          category: category,
+          mealType: data['mealType'] as int,
+          isPurchased: false,
+        ),
+      );
+    }
+
+    return shoppingItems;
+  }
+
   /// Convertit une liste d'ingrédients en articles de shopping
   /// Agrège les ingrédients par nom et additionne les quantités
   static List<ShoppingItem> generateFromIngredients(

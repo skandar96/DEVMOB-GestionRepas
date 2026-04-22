@@ -1,4 +1,5 @@
 import 'package:uuid/uuid.dart';
+import 'Recipe.dart';
 
 class ShoppingItem {
   final String id;
@@ -8,6 +9,7 @@ class ShoppingItem {
   final String unit; // "kg", "g", "ml", "l", "pièce", etc.
   final bool isPurchased;
   final String? category; // "Fruits", "Légumes", "Viande", etc.
+  final int? mealType; // 0 = petitDejeuner, 1 = dejeuner, 2 = diner
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -19,11 +21,32 @@ class ShoppingItem {
     required this.unit,
     this.isPurchased = false,
     this.category,
+    this.mealType,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : id = id ?? const Uuid().v4(),
        createdAt = createdAt ?? DateTime.now(),
        updatedAt = updatedAt ?? DateTime.now();
+
+  // Get mealType as RecipeCategory enum
+  RecipeCategory? get mealTypeCategory {
+    if (mealType == null) return null;
+    return RecipeCategory.values[mealType!];
+  }
+
+  // Get meal type label with emoji
+  String get mealTypeLabel {
+    switch (mealTypeCategory) {
+      case RecipeCategory.petitDejeuner:
+        return 'Petit déjeuner ☀️';
+      case RecipeCategory.dejeuner:
+        return 'Déjeuner 🍽️';
+      case RecipeCategory.diner:
+        return 'Dîner 🌙';
+      default:
+        return 'Non spécifié';
+    }
+  }
 
   // Convert to JSON for Firestore
   Map<String, dynamic> toMap() {
@@ -35,6 +58,7 @@ class ShoppingItem {
       'unit': unit,
       'isPurchased': isPurchased,
       'category': category,
+      'mealType': mealType,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -50,6 +74,7 @@ class ShoppingItem {
       unit: map['unit'] as String,
       isPurchased: map['isPurchased'] as bool? ?? false,
       category: map['category'] as String?,
+      mealType: map['mealType'] as int?,
       createdAt: DateTime.parse(
         map['createdAt'] as String? ?? DateTime.now().toIso8601String(),
       ),
@@ -68,6 +93,7 @@ class ShoppingItem {
     String? unit,
     bool? isPurchased,
     String? category,
+    int? mealType,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -79,6 +105,7 @@ class ShoppingItem {
       unit: unit ?? this.unit,
       isPurchased: isPurchased ?? this.isPurchased,
       category: category ?? this.category,
+      mealType: mealType ?? this.mealType,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
