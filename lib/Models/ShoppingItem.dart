@@ -10,6 +10,7 @@ class ShoppingItem {
   final bool isPurchased;
   final String? category; // "Fruits", "Légumes", "Viande", etc.
   final int? mealType; // 0 = petitDejeuner, 1 = dejeuner, 2 = diner
+  final List<String>? sourceMealPlanIds;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -22,6 +23,7 @@ class ShoppingItem {
     this.isPurchased = false,
     this.category,
     this.mealType,
+    this.sourceMealPlanIds,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : id = id ?? const Uuid().v4(),
@@ -59,6 +61,7 @@ class ShoppingItem {
       'isPurchased': isPurchased,
       'category': category,
       'mealType': mealType,
+      'sourceMealPlanIds': sourceMealPlanIds,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -75,6 +78,9 @@ class ShoppingItem {
       isPurchased: map['isPurchased'] as bool? ?? false,
       category: map['category'] as String?,
       mealType: map['mealType'] as int?,
+      sourceMealPlanIds: (map['sourceMealPlanIds'] as List?)
+          ?.map((value) => value.toString())
+          .toList(),
       createdAt: DateTime.parse(
         map['createdAt'] as String? ?? DateTime.now().toIso8601String(),
       ),
@@ -94,6 +100,7 @@ class ShoppingItem {
     bool? isPurchased,
     String? category,
     int? mealType,
+    List<String>? sourceMealPlanIds,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -106,6 +113,7 @@ class ShoppingItem {
       isPurchased: isPurchased ?? this.isPurchased,
       category: category ?? this.category,
       mealType: mealType ?? this.mealType,
+      sourceMealPlanIds: sourceMealPlanIds ?? this.sourceMealPlanIds,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

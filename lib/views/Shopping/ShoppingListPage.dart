@@ -96,15 +96,32 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
   }
 
   String _buildSyncSignature(List<dynamic> mealPlans, List<Recipe> recipes) {
-    final mealPlanSignature = mealPlans
+    final sortedMealPlans = mealPlans.toList()
+      ..sort((a, b) => (a.id as String).compareTo(b.id as String));
+
+    final mealPlanSignature = sortedMealPlans
         .map(
           (m) =>
               '${m.id}|${m.recipeId}|${m.date.toIso8601String()}|${m.mealType.index}|${m.servings}',
         )
         .join(';');
 
-    final recipeSignature = recipes
-        .map((r) => '${r.id}|${r.ingredients.length}')
+    final sortedRecipes = recipes.toList()
+      ..sort((a, b) => a.id.compareTo(b.id));
+
+    final recipeSignature = sortedRecipes
+        .map((r) {
+          final ingredientSignature =
+              r.ingredients
+                  .map(
+                    (ingredient) =>
+                        '${ingredient.name.trim().toLowerCase()}|${ingredient.quantity.trim()}|${ingredient.unit.trim().toLowerCase()}',
+                  )
+                  .toList()
+                ..sort();
+
+          return '${r.id}|${r.servings}|${ingredientSignature.join(',')}';
+        })
         .join(';');
 
     return '$mealPlanSignature||$recipeSignature';
@@ -129,6 +146,9 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
 
     _isAutoSyncing = true;
     try {
+      final previousItems = List<ShoppingItem>.from(
+        shoppingProvider.shoppingItems,
+      );
       final ingredientsWithMealType = <Map<String, dynamic>>[];
 
       for (final mealPlan in mealPlans) {
@@ -141,10 +161,18 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
           }
 
           if (recipe != null) {
+            final recipeServings = recipe.servings <= 0 ? 1 : recipe.servings;
+            final plannedServings = mealPlan.servings <= 0
+                ? 1
+                : mealPlan.servings;
+
             for (final ingredient in recipe.ingredients) {
               ingredientsWithMealType.add({
                 'ingredient': ingredient,
                 'mealType': mealPlan.mealType.index,
+                'recipeServings': recipeServings,
+                'plannedServings': plannedServings,
+                'mealPlanId': mealPlan.id,
               });
             }
           }
@@ -159,6 +187,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
               ingredientsWithMealType,
               authProvider.user!.id!,
               categoryMapper: ShoppingListGenerator.categorizeIngredient,
+              existingItems: previousItems,
             );
         await shoppingProvider.addMultipleItems(shoppingItems);
       }
@@ -213,6 +242,22 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
     }
   }
 
+  Future<void> _deleteItemAndRelatedMealPlans(
+    ShoppingItem item,
+    ShoppingListProvider shoppingProvider,
+  ) async {
+    final mealPlanIds = item.sourceMealPlanIds ?? const <String>[];
+    final mealPlanProvider = _mealPlanProvider;
+
+    if (mealPlanIds.isNotEmpty && mealPlanProvider != null) {
+      for (final mealPlanId in mealPlanIds) {
+        await mealPlanProvider.deleteMealPlan(mealPlanId);
+      }
+    }
+
+    await shoppingProvider.deleteItem(item.id);
+  }
+
   Map<int, List<ShoppingItem>> _getGroupedItemsByMealType(
     List<ShoppingItem> items,
   ) {
@@ -258,9 +303,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        Color(0xFF8B5CF6),
-                        Color(0xFF7C3AED),
-                        Color(0xFF6D28D9),
+                       Color(0xFF5D38FF), Color(0xFFEE1289)
                       ],
                     ),
                     borderRadius: BorderRadius.only(
@@ -399,7 +442,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
                       gradient: const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
+                        colors: [Color(0xFF5D38FF), Color(0xFFEE1289)],
                       ),
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -591,10 +634,46 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
           IconButton(
             icon: Icon(Icons.delete_outline, color: Colors.grey[400], size: 20),
             onPressed: () {
-              shoppingProvider.deleteItem(item.id);
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('Article supprimé')));
+              showDialog(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  title: const Text('Supprimer l’article ?'),
+                  content: Text(
+                    item.sourceMealPlanIds?.isNotEmpty == true
+                        ? 'Supprimer aussi le repas planifié associé ?'
+                        : 'Supprimer cet article de la liste ?',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: const Text('Annuler'),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        Navigator.pop(dialogContext);
+                        await _deleteItemAndRelatedMealPlans(
+                          item,
+                          shoppingProvider,
+                        );
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              item.sourceMealPlanIds?.isNotEmpty == true
+                                  ? 'Article et planning supprimés'
+                                  : 'Article supprimé',
+                            ),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        'Supprimer',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              );
             },
           ),
         ],

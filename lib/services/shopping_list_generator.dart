@@ -3,45 +3,71 @@ import '../Models/ingredient.dart';
 
 class ShoppingListGenerator {
   /// Convertit une liste d'ingrédients avec mealType en articles de shopping
-  /// Agrège les ingrédients par nom et mealType, et additionne les quantités
+  /// Agrège les ingrédients par nom et mealType, additionne les quantités,
+  /// et conserve l'état d'achat existant si la ligne correspond toujours.
   static List<ShoppingItem> generateFromIngredientsWithMealType(
     List<Map<String, dynamic>> ingredientsWithMealType,
     String userId, {
     String Function(String)? categoryMapper,
+    List<ShoppingItem>? existingItems,
   }) {
+    final existingItemsByKey = <String, ShoppingItem>{};
+    for (final item in existingItems ?? const <ShoppingItem>[]) {
+      final key = _buildItemKey(item.name, item.unit, item.mealType);
+      final current = existingItemsByKey[key];
+      if (current == null || (!current.isPurchased && item.isPurchased)) {
+        existingItemsByKey[key] = item;
+      }
+    }
+
     // Grouper les ingrédients par nom et mealType (insensible à la casse)
     final Map<String, Map<String, dynamic>> aggregated = {};
 
     for (final data in ingredientsWithMealType) {
       final ingredient = data['ingredient'] as Ingredient;
       final mealType = data['mealType'] as int;
+      final recipeServings = data['recipeServings'] as int? ?? 1;
+      final plannedServings = data['plannedServings'] as int? ?? 1;
+      final mealPlanId = data['mealPlanId'] as String?;
       final key = '${ingredient.name.toLowerCase().trim()}_$mealType';
+      final scaledQuantity = _scaleQuantity(
+        ingredient.quantity,
+        recipeServings,
+        plannedServings,
+      );
 
       if (aggregated.containsKey(key)) {
         // Si l'ingrédient existe déjà, additionner les quantités
         final existing = aggregated[key]!;
         final existingQty =
             double.tryParse(existing['quantity'] as String) ?? 1.0;
-        final newQty = double.tryParse(ingredient.quantity) ?? 1.0;
+        final newQty = scaledQuantity;
 
         // Si les unités sont les mêmes, additionner
         if (existing['unit'] == ingredient.unit) {
-          existing['quantity'] = (existingQty + newQty).toString();
+          existing['quantity'] = _formatQuantity(existingQty + newQty);
+          final sourceMealPlanIds =
+              existing['sourceMealPlanIds'] as Set<String>;
+          if (mealPlanId != null) {
+            sourceMealPlanIds.add(mealPlanId);
+          }
         } else {
           // Si les unités sont différentes, créer un nouvel article
           aggregated['${key}_${ingredient.unit}'] = {
             'name': ingredient.name,
-            'quantity': ingredient.quantity,
+            'quantity': _formatQuantity(newQty),
             'unit': ingredient.unit,
             'mealType': mealType,
+            'sourceMealPlanIds': <String>{if (mealPlanId != null) mealPlanId},
           };
         }
       } else {
         aggregated[key] = {
           'name': ingredient.name,
-          'quantity': ingredient.quantity,
+          'quantity': _formatQuantity(scaledQuantity),
           'unit': ingredient.unit,
           'mealType': mealType,
+          'sourceMealPlanIds': <String>{if (mealPlanId != null) mealPlanId},
         };
       }
     }
@@ -51,6 +77,14 @@ class ShoppingListGenerator {
     for (final entry in aggregated.entries) {
       final data = entry.value;
       final quantity = double.tryParse(data['quantity'] as String) ?? 1.0;
+      final itemKey = _buildItemKey(
+        data['name'] as String,
+        data['unit'] as String,
+        data['mealType'] as int?,
+      );
+      final existingItem = existingItemsByKey[itemKey];
+      final sourceMealPlanIds =
+          (data['sourceMealPlanIds'] as Set<String>).toList()..sort();
 
       // Déterminer la catégorie
       String category = 'Autres';
@@ -60,13 +94,19 @@ class ShoppingListGenerator {
 
       shoppingItems.add(
         ShoppingItem(
+          id: existingItem?.id,
           userId: userId,
           name: data['name'] as String,
           quantity: quantity,
           unit: data['unit'] as String,
           category: category,
           mealType: data['mealType'] as int,
-          isPurchased: false,
+          sourceMealPlanIds: sourceMealPlanIds.isEmpty
+              ? null
+              : sourceMealPlanIds,
+          isPurchased: existingItem?.isPurchased ?? false,
+          createdAt: existingItem?.createdAt,
+          updatedAt: existingItem?.updatedAt,
         ),
       );
     }
@@ -139,6 +179,32 @@ class ShoppingListGenerator {
     }
 
     return shoppingItems;
+  }
+
+  static String _buildItemKey(String name, String unit, int? mealType) {
+    return '${name.toLowerCase().trim()}|${unit.toLowerCase().trim()}|${mealType ?? -1}';
+  }
+
+  static double _scaleQuantity(
+    String quantity,
+    int recipeServings,
+    int plannedServings,
+  ) {
+    final baseQuantity = double.tryParse(quantity.replaceAll(',', '.')) ?? 1.0;
+    final sourceServings = recipeServings <= 0 ? 1 : recipeServings;
+    final targetServings = plannedServings <= 0 ? 1 : plannedServings;
+    return baseQuantity * targetServings / sourceServings;
+  }
+
+  static String _formatQuantity(double quantity) {
+    if (quantity == quantity.roundToDouble()) {
+      return quantity.toInt().toString();
+    }
+
+    return quantity
+        .toStringAsFixed(2)
+        .replaceAll(RegExp(r'0+$'), '')
+        .replaceAll(RegExp(r'\.$'), '');
   }
 
   /// Catégorise un ingrédient automatiquement basé sur son nom
