@@ -4,6 +4,9 @@ import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart';
 import '../../providers/RecipeProvider.dart';
 import '../../providers/meal_plan_provider.dart';
+import '../../providers/ShoppingListProvider.dart';
+import '../../services/shopping_list_generator.dart';
+import '../../Models/ShoppingItem.dart';
 import '../../providers/auth_provider.dart';
 import '../../Models/meal_plan.dart';
 import '../../Models/Recipe.dart';
@@ -324,6 +327,7 @@ class _AssignRecipePageState extends State<AssignRecipePage> {
       context,
       listen: false,
     );
+    final recipeProvider = Provider.of<RecipeProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     if (authProvider.user == null) {
@@ -343,6 +347,55 @@ class _AssignRecipePageState extends State<AssignRecipePage> {
 
       final success = await mealPlanProvider.updateMealPlan(updatedMeal);
       if (success && mounted) {
+        // After updating meal plan, resync shopping list from all meal plans
+        try {
+          final shoppingProvider = Provider.of<ShoppingListProvider>(
+            context,
+            listen: false,
+          );
+          shoppingProvider.setUserId(authProvider.user!.id!);
+          final previousItems = List<ShoppingItem>.from(
+            shoppingProvider.shoppingItems,
+          );
+          final mealPlans = mealPlanProvider.mealPlans;
+          final recipes = recipeProvider.recipes;
+
+          final ingredientsWithMealType = <Map<String, dynamic>>[];
+          for (final mp in mealPlans) {
+            if (mp.recipeId != null) {
+              try {
+                final r = recipes.firstWhere((e) => e.id == mp.recipeId);
+                final recipeServings = r.servings <= 0 ? 1 : r.servings;
+                final plannedServings = mp.servings <= 0 ? 1 : mp.servings;
+                for (final ingredient in r.ingredients) {
+                  ingredientsWithMealType.add({
+                    'ingredient': ingredient,
+                    'mealType': mp.mealType.index,
+                    'recipeServings': recipeServings,
+                    'plannedServings': plannedServings,
+                    'mealPlanId': mp.id,
+                  });
+                }
+              } catch (_) {}
+            }
+          }
+
+          final shoppingItems =
+              ShoppingListGenerator.generateFromIngredientsWithMealType(
+                ingredientsWithMealType,
+                authProvider.user!.id!,
+                categoryMapper: ShoppingListGenerator.categorizeIngredient,
+                existingItems: previousItems,
+              );
+
+          await shoppingProvider.clearAllItems();
+          if (shoppingItems.isNotEmpty) {
+            await shoppingProvider.addMultipleItems(shoppingItems);
+          }
+        } catch (e) {
+          debugPrint('Erreur sync courses après update meal: $e');
+        }
+        if (!mounted) return;
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Repas modifié avec succès')),
@@ -362,6 +415,55 @@ class _AssignRecipePageState extends State<AssignRecipePage> {
 
       final success = await mealPlanProvider.addMealPlan(newMeal);
       if (success && mounted) {
+        // After adding a new meal plan, resync shopping list from all meal plans
+        try {
+          final shoppingProvider = Provider.of<ShoppingListProvider>(
+            context,
+            listen: false,
+          );
+          shoppingProvider.setUserId(authProvider.user!.id!);
+          final previousItems = List<ShoppingItem>.from(
+            shoppingProvider.shoppingItems,
+          );
+          final mealPlans = mealPlanProvider.mealPlans;
+          final recipes = recipeProvider.recipes;
+
+          final ingredientsWithMealType = <Map<String, dynamic>>[];
+          for (final mp in mealPlans) {
+            if (mp.recipeId != null) {
+              try {
+                final r = recipes.firstWhere((e) => e.id == mp.recipeId);
+                final recipeServings = r.servings <= 0 ? 1 : r.servings;
+                final plannedServings = mp.servings <= 0 ? 1 : mp.servings;
+                for (final ingredient in r.ingredients) {
+                  ingredientsWithMealType.add({
+                    'ingredient': ingredient,
+                    'mealType': mp.mealType.index,
+                    'recipeServings': recipeServings,
+                    'plannedServings': plannedServings,
+                    'mealPlanId': mp.id,
+                  });
+                }
+              } catch (_) {}
+            }
+          }
+
+          final shoppingItems =
+              ShoppingListGenerator.generateFromIngredientsWithMealType(
+                ingredientsWithMealType,
+                authProvider.user!.id!,
+                categoryMapper: ShoppingListGenerator.categorizeIngredient,
+                existingItems: previousItems,
+              );
+
+          await shoppingProvider.clearAllItems();
+          if (shoppingItems.isNotEmpty) {
+            await shoppingProvider.addMultipleItems(shoppingItems);
+          }
+        } catch (e) {
+          debugPrint('Erreur sync courses après add meal: $e');
+        }
+        if (!mounted) return;
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Repas ajouté avec succès')),

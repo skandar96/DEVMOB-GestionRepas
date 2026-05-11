@@ -22,6 +22,8 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
   MealPlanProvider? _mealPlanProvider;
   RecipeProvider? _recipeProvider;
   bool _isAutoSyncing = false;
+  bool _isInitializingUserData = false;
+  String? _initializedUserId;
   String _lastSyncSignature = '';
   String _selectedUnit = 'pièce';
   String _selectedCategory = 'Autres';
@@ -59,26 +61,44 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
     _searchController = TextEditingController();
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final shoppingProvider = Provider.of<ShoppingListProvider>(
-        context,
-        listen: false,
-      );
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
       _mealPlanProvider = Provider.of<MealPlanProvider>(context, listen: false);
       _recipeProvider = Provider.of<RecipeProvider>(context, listen: false);
 
       _mealPlanProvider?.addListener(_onMealPlanOrRecipeChanged);
       _recipeProvider?.addListener(_onMealPlanOrRecipeChanged);
-
-      if (authProvider.user != null) {
-        final userId = authProvider.user!.id;
-        if (userId != null) {
-          shoppingProvider.setUserId(userId);
-          await shoppingProvider.loadShoppingItems();
-          await _syncShoppingListFromMealPlan(force: true);
-        }
-      }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final userId = context.read<AuthProvider>().user?.id;
+
+    if (userId != null && userId.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _initializeShoppingForUser(userId);
+      });
+    } else if (_initializedUserId != null) {
+      _initializedUserId = null;
+      context.read<ShoppingListProvider>().clearUserSession();
+    }
+  }
+
+  Future<void> _initializeShoppingForUser(String userId) async {
+    if (!mounted || _isInitializingUserData || _initializedUserId == userId) {
+      return;
+    }
+
+    _isInitializingUserData = true;
+    try {
+      final shoppingProvider = context.read<ShoppingListProvider>();
+      shoppingProvider.setUserId(userId);
+      await shoppingProvider.loadShoppingItems();
+      await _syncShoppingListFromMealPlan(force: true);
+      _initializedUserId = userId;
+    } finally {
+      _isInitializingUserData = false;
+    }
   }
 
   @override
@@ -137,6 +157,8 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
     );
 
     if (authProvider.user?.id == null) return;
+
+    shoppingProvider.setUserId(authProvider.user!.id!);
 
     final mealPlans = _mealPlanProvider?.mealPlans ?? [];
     final recipes = _recipeProvider?.recipes ?? <Recipe>[];
@@ -302,9 +324,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [
-                       Color(0xFF5D38FF), Color(0xFFEE1289)
-                      ],
+                      colors: [Color(0xFF5D38FF), Color(0xFFEE1289)],
                     ),
                     borderRadius: BorderRadius.only(
                       bottomLeft: Radius.circular(30),

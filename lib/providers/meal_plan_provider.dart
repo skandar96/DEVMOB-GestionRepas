@@ -31,11 +31,6 @@ class MealPlanProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void clearError() {
-    _error = '';
-    notifyListeners();
-  }
-
   // Set week
   void setWeekStart(DateTime date) {
     // Get Monday of the week
@@ -60,8 +55,10 @@ class MealPlanProvider with ChangeNotifier {
   Future<void> fetchMealPlansForWeek(String userId) async {
     _setLoading(true);
     try {
-      _mealPlans =
-          await _mealPlanService.getMealPlansForWeek(userId, _selectedWeekStart);
+      _mealPlans = await _mealPlanService.getMealPlansForWeek(
+        userId,
+        _selectedWeekStart,
+      );
       _setError('');
     } catch (e) {
       _setError("Error loading meal plans: $e");
@@ -108,7 +105,18 @@ class MealPlanProvider with ChangeNotifier {
   Future<bool> deleteMealPlan(String mealPlanId) async {
     _setLoading(true);
     try {
-      await _mealPlanService.deleteMealPlan(mealPlanId);
+      MealPlan? mp;
+      try {
+        mp = _mealPlans.firstWhere((m) => m.id == mealPlanId);
+      } catch (_) {
+        mp = null;
+      }
+      if (mp != null) {
+        await _mealPlanService.deleteMealPlanForUser(mp.userId, mealPlanId);
+      } else {
+        // fallback to collectionGroup delete
+        await _mealPlanService.deleteMealPlan(mealPlanId);
+      }
       _mealPlans.removeWhere((m) => m.id == mealPlanId);
       notifyListeners();
       return true;

@@ -4,7 +4,7 @@ import '../services/ShoppingListService.dart';
 
 class ShoppingListProvider with ChangeNotifier {
   final ShoppingListService _shoppingListService = ShoppingListService();
-  late String _userId;
+  String _userId = '';
 
   List<ShoppingItem> _shoppingItems = [];
   bool _isLoading = false;
@@ -25,8 +25,17 @@ class ShoppingListProvider with ChangeNotifier {
 
   // Initialize with user ID
   void setUserId(String userId) {
+    if (_userId == userId) return;
     _userId = userId;
     _shoppingItems = [];
+    _error = null;
+    notifyListeners();
+  }
+
+  void clearUserSession() {
+    _userId = '';
+    _shoppingItems = [];
+    _error = null;
     notifyListeners();
   }
 

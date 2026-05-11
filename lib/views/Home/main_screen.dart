@@ -9,23 +9,28 @@ import '../../providers/RecipeProvider.dart';
 import '../../providers/auth_provider.dart';
 
 class MainNavigation extends StatefulWidget {
-  const MainNavigation({super.key});
+  final int initialIndex;
+
+  const MainNavigation({super.key, this.initialIndex = 0});
 
   @override
   State<MainNavigation> createState() => MainNavigationState();
 }
 
 class MainNavigationState extends State<MainNavigation> {
-  int _selectedIndex = 0;
+  late int _selectedIndex;
 
   @override
   void initState() {
     super.initState();
-    // Initialiser l'userId du RecipeProvider
-    final authProvider = context.read<AuthProvider>();
-    if (authProvider.user != null && authProvider.user!.id != null) {
-      context.read<RecipeProvider>().setUserId(authProvider.user!.id!);
-    }
+    _selectedIndex = widget.initialIndex;
+    // Initialiser l'userId du RecipeProvider après le premier build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = context.read<AuthProvider>();
+      if (authProvider.user != null && authProvider.user!.id != null) {
+        context.read<RecipeProvider>().setUserId(authProvider.user!.id!);
+      }
+    });
   }
 
   void switchTab(int index) {
@@ -38,17 +43,17 @@ class MainNavigationState extends State<MainNavigation> {
     });
   }
 
-  final List<Widget> _pages = const [
-    HomePage(),
-    RecipeListPage(),
-    MealCalendarPage(),
-    ShoppingListPage(),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final pages = [
+      HomePage(onNavigateToTab: switchTab),
+      const RecipeListPage(),
+      const MealCalendarPage(),
+      const ShoppingListPage(),
+    ];
+
     return Scaffold(
-      body: _pages[_selectedIndex],
+      body: pages[_selectedIndex],
       bottomNavigationBar: CustomBottomNavBar(
         selectedIndex: _selectedIndex,
         onTap: switchTab,

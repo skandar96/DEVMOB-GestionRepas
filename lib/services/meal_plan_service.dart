@@ -4,10 +4,14 @@ import '../Models/meal_plan.dart';
 class MealPlanService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  String _dateQueryValue(DateTime date) => date.toIso8601String();
+
   // Add a meal plan
   Future<bool> addMealPlan(MealPlan mealPlan) async {
     try {
       await _firestore
+          .collection('users')
+          .doc(mealPlan.userId)
           .collection('meal_plans')
           .doc(mealPlan.id)
           .set(mealPlan.toJson());
@@ -18,10 +22,28 @@ class MealPlanService {
     }
   }
 
+  // Delete a meal plan for a specific user (subcollection)
+  Future<bool> deleteMealPlanForUser(String userId, String mealPlanId) async {
+    try {
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('meal_plans')
+          .doc(mealPlanId)
+          .delete();
+      return true;
+    } catch (e) {
+      print("Error deleting meal plan for user: $e");
+      rethrow;
+    }
+  }
+
   // Update a meal plan
   Future<bool> updateMealPlan(MealPlan mealPlan) async {
     try {
       await _firestore
+          .collection('users')
+          .doc(mealPlan.userId)
           .collection('meal_plans')
           .doc(mealPlan.id)
           .update(mealPlan.toJson());
@@ -35,7 +57,16 @@ class MealPlanService {
   // Delete a meal plan
   Future<bool> deleteMealPlan(String mealPlanId) async {
     try {
-      await _firestore.collection('meal_plans').doc(mealPlanId).delete();
+      // This method requires userId context; caller should delete via the user's subcollection.
+      // Keep backward-compatibility by attempting to delete from any matching document in collectionGroup.
+      final query = await _firestore
+          .collectionGroup('meal_plans')
+          .where('id', isEqualTo: mealPlanId)
+          .limit(1)
+          .get();
+      if (query.docs.isNotEmpty) {
+        await query.docs.first.reference.delete();
+      }
       return true;
     } catch (e) {
       print("Error deleting meal plan: $e");
@@ -45,16 +76,21 @@ class MealPlanService {
 
   // Get meal plans for a specific week
   Future<List<MealPlan>> getMealPlansForWeek(
-      String userId, DateTime weekStart) async {
+    String userId,
+    DateTime weekStart,
+  ) async {
     try {
       DateTime weekEnd = weekStart.add(const Duration(days: 7));
 
       final querySnapshot = await _firestore
+          .collection('users')
+          .doc(userId)
           .collection('meal_plans')
-          .where('userId', isEqualTo: userId)
-          .where('date',
-              isGreaterThanOrEqualTo: weekStart,
-              isLessThan: weekEnd)
+          .where(
+            'date',
+            isGreaterThanOrEqualTo: _dateQueryValue(weekStart),
+            isLessThan: _dateQueryValue(weekEnd),
+          )
           .get();
 
       return querySnapshot.docs
@@ -68,14 +104,21 @@ class MealPlanService {
 
   // Get meal plans for a specific date
   Future<List<MealPlan>> getMealPlansForDate(
-      String userId, DateTime date) async {
+    String userId,
+    DateTime date,
+  ) async {
     try {
       DateTime nextDay = DateTime(date.year, date.month, date.day + 1);
 
       final querySnapshot = await _firestore
+          .collection('users')
+          .doc(userId)
           .collection('meal_plans')
-          .where('userId', isEqualTo: userId)
-          .where('date', isGreaterThanOrEqualTo: date, isLessThan: nextDay)
+          .where(
+            'date',
+            isGreaterThanOrEqualTo: _dateQueryValue(date),
+            isLessThan: _dateQueryValue(nextDay),
+          )
           .get();
 
       return querySnapshot.docs
@@ -89,14 +132,22 @@ class MealPlanService {
 
   // Get meal plan for a specific meal type on a specific date
   Future<MealPlan?> getMealPlanForMealType(
-      String userId, DateTime date, MealType mealType) async {
+    String userId,
+    DateTime date,
+    MealType mealType,
+  ) async {
     try {
       DateTime nextDay = DateTime(date.year, date.month, date.day + 1);
 
       final querySnapshot = await _firestore
+          .collection('users')
+          .doc(userId)
           .collection('meal_plans')
-          .where('userId', isEqualTo: userId)
-          .where('date', isGreaterThanOrEqualTo: date, isLessThan: nextDay)
+          .where(
+            'date',
+            isGreaterThanOrEqualTo: _dateQueryValue(date),
+            isLessThan: _dateQueryValue(nextDay),
+          )
           .where('mealType', isEqualTo: mealType.toString())
           .limit(1)
           .get();

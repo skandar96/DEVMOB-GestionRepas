@@ -3,7 +3,9 @@ import '../../services/auth_service.dart';
 import '../../theme/gradient_header.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final ValueChanged<int>? onNavigateToTab;
+
+  const HomePage({super.key, this.onNavigateToTab});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -174,24 +176,28 @@ class _HomePageState extends State<HomePage> {
                 title: "Mes Recettes",
                 subtitle: "Parcourir et gérer",
                 color: Colors.purple,
+                onTap: () => widget.onNavigateToTab?.call(1),
               ),
               _quickAccessCard(
                 icon: Icons.restaurant_menu_rounded,
                 title: "Nouvelle\nRecette",
                 subtitle: "Ajouter une recette",
                 color: Colors.pink,
+                onTap: () => Navigator.pushNamed(context, '/addRecipe'),
               ),
               _quickAccessCard(
                 icon: Icons.calendar_today_rounded,
                 title: "Planning Repas",
                 subtitle: "Planifier la semaine",
                 color: Colors.red,
+                onTap: () => widget.onNavigateToTab?.call(2),
               ),
               _quickAccessCard(
                 icon: Icons.shopping_cart_rounded,
                 title: "Liste de\nCourses",
                 subtitle: "Gérer mes achats",
                 color: Colors.orange,
+                onTap: () => widget.onNavigateToTab?.call(3),
               ),
             ],
           ),
@@ -205,46 +211,57 @@ class _HomePageState extends State<HomePage> {
     required String title,
     required String subtitle,
     required Color color,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [color.withOpacity(0.85), color],
+        child: Ink(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
               ),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(icon, color: Colors.white, size: 28),
+            ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [color.withOpacity(0.85), color],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: Colors.white, size: 28),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
-          ),
-        ],
+        ),
       ),
     );
   }
