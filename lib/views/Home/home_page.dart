@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
+import '../../services/RecipeService.dart';
+import '../../services/meal_plan_service.dart';
+import '../../services/ShoppingListService.dart';
 import '../../theme/gradient_header.dart';
 
 class HomePage extends StatefulWidget {
@@ -12,6 +15,60 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final RecipeService _recipeService = RecipeService();
+  final MealPlanService _mealPlanService = MealPlanService();
+  final ShoppingListService _shoppingService = ShoppingListService();
+
+  int _recipeCount = 0;
+  int _plannedMealsCount = 0;
+  int _shoppingItemsCount = 0;
+  bool _loadingStats = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    setState(() => _loadingStats = true);
+    try {
+      final auth = AuthService();
+      final user = auth.getCurrentUser();
+      if (user == null || user.id == null) {
+        setState(() {
+          _recipeCount = 0;
+          _plannedMealsCount = 0;
+          _shoppingItemsCount = 0;
+          _loadingStats = false;
+        });
+        return;
+      }
+      final userId = user.id!;
+
+      final recipes = await _recipeService.getRecipes(userId);
+      final shopping = await _shoppingService.getShoppingItems(userId);
+
+      // For planned meals, count plans in the current week
+      final now = DateTime.now();
+      final monday = now.subtract(Duration(days: now.weekday - 1));
+      final mealPlans = await _mealPlanService.getMealPlansForWeek(
+        userId,
+        monday,
+      );
+
+      setState(() {
+        _recipeCount = recipes.length;
+        _shoppingItemsCount = shopping.length;
+        _plannedMealsCount = mealPlans.length;
+      });
+    } catch (e) {
+      // ignore errors for now, keep previous values
+    } finally {
+      setState(() => _loadingStats = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -279,12 +336,21 @@ class _HomePageState extends State<HomePage> {
         ),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: const Row(
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _StatItem(value: "12", label: "Recettes"),
-          _StatItem(value: "7", label: "Repas planifiés"),
-          _StatItem(value: "24", label: "Articles"),
+          _StatItem(
+            value: _loadingStats ? "-" : _recipeCount.toString(),
+            label: "Recettes",
+          ),
+          _StatItem(
+            value: _loadingStats ? "-" : _plannedMealsCount.toString(),
+            label: "Repas planifiés",
+          ),
+          _StatItem(
+            value: _loadingStats ? "-" : _shoppingItemsCount.toString(),
+            label: "Articles",
+          ),
         ],
       ),
     );

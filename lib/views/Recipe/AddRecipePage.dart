@@ -20,16 +20,20 @@ class _AddRecipePageState extends State<AddRecipePage> {
   final _timeController = TextEditingController();
   final _servingsController = TextEditingController();
   final _ingredientsController = TextEditingController();
+  final _ingredientInputController = TextEditingController();
+  final List<Ingredient> _ingredientList = [];
   final _instructionsController = TextEditingController();
 
   RecipeCategory _selectedCategory = RecipeCategory.dejeuner;
   RecipeDifficulty _selectedDifficulty = RecipeDifficulty.facile;
+
   bool _isLoading = false;
   bool _isEditing = false;
 
   @override
   void initState() {
     super.initState();
+
     if (widget.recipe != null) {
       _isEditing = true;
       _initializeForEditing();
@@ -38,19 +42,18 @@ class _AddRecipePageState extends State<AddRecipePage> {
 
   void _initializeForEditing() {
     final recipe = widget.recipe!;
+
     _nameController.text = recipe.name;
     _descriptionController.text = recipe.description;
     _timeController.text = recipe.preparationTime.toString();
     _servingsController.text = recipe.servings.toString();
+
     _selectedCategory = recipe.category;
     _selectedDifficulty = recipe.difficulty;
 
-    // Format ingredients
-    _ingredientsController.text = recipe.ingredients
-        .map((i) => '${i.name} - ${i.quantity} - ${i.unit}')
-        .join('\n');
+    _ingredientList.clear();
+    _ingredientList.addAll(recipe.ingredients);
 
-    // Format instructions
     _instructionsController.text = recipe.instructions.join('\n');
   }
 
@@ -61,6 +64,7 @@ class _AddRecipePageState extends State<AddRecipePage> {
     _timeController.dispose();
     _servingsController.dispose();
     _ingredientsController.dispose();
+    _ingredientInputController.dispose();
     _instructionsController.dispose();
     super.dispose();
   }
@@ -70,11 +74,11 @@ class _AddRecipePageState extends State<AddRecipePage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF7C3AED),
+        elevation: 0,
         title: Text(
           _isEditing ? 'Modifier la Recette' : 'Ajouter une Recette',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -88,20 +92,26 @@ class _AddRecipePageState extends State<AddRecipePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildSection('Informations Générales'),
+
               _buildTextField(
                 _nameController,
                 'Nom de la recette',
                 Icons.restaurant,
               ),
+
               const SizedBox(height: 12),
+
               _buildTextField(
                 _descriptionController,
                 'Description',
                 Icons.description,
                 maxLines: 3,
               ),
+
               const SizedBox(height: 16),
+
               _buildSection('Détails'),
+
               Row(
                 children: [
                   Expanded(
@@ -112,7 +122,9 @@ class _AddRecipePageState extends State<AddRecipePage> {
                       isNumeric: true,
                     ),
                   ),
+
                   const SizedBox(width: 12),
+
                   Expanded(
                     child: _buildTextField(
                       _servingsController,
@@ -123,28 +135,36 @@ class _AddRecipePageState extends State<AddRecipePage> {
                   ),
                 ],
               ),
+
               const SizedBox(height: 12),
+
               _buildCategoryDropdown(),
+
               const SizedBox(height: 12),
+
               _buildDifficultyDropdown(),
+
               const SizedBox(height: 16),
+
               _buildSection('Ingrédients'),
-              _buildTextField(
-                _ingredientsController,
-                'Ingrédients (un par ligne)',
-                Icons.list,
-                maxLines: 5,
-              ),
+
+              _buildIngredientsInput(),
+
               const SizedBox(height: 16),
+
               _buildSection('Instructions'),
+
               _buildTextField(
                 _instructionsController,
                 'Instructions',
                 Icons.notes,
                 maxLines: 5,
               ),
+
               const SizedBox(height: 24),
+
               _buildActionButtons(),
+
               const SizedBox(height: 16),
             ],
           ),
@@ -177,14 +197,33 @@ class _AddRecipePageState extends State<AddRecipePage> {
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
-      keyboardType: isNumeric ? TextInputType.number : TextInputType.text,
+
+      // IMPORTANT
+      keyboardType: maxLines > 1
+          ? TextInputType.multiline
+          : (isNumeric
+                ? TextInputType.number
+                : TextInputType.text),
+
+      textInputAction: maxLines > 1
+          ? TextInputAction.newline
+          : TextInputAction.done,
+
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: const Color(0xFF7C3AED)),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        prefixIcon: Icon(
+          icon,
+          color: const Color(0xFF7C3AED),
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF7C3AED), width: 2),
+          borderSide: const BorderSide(
+            color: Color(0xFF7C3AED),
+            width: 2,
+          ),
         ),
         filled: true,
         fillColor: Colors.grey[50],
@@ -198,21 +237,122 @@ class _AddRecipePageState extends State<AddRecipePage> {
     );
   }
 
+  Widget _buildIngredientsInput() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _ingredientList.map((ing) {
+            return Chip(
+              label: Text(
+                '${ing.name} '
+                '${ing.quantity.isNotEmpty ? '- ${ing.quantity}' : ''} '
+                '${ing.unit.isNotEmpty ? ing.unit : ''}',
+              ),
+              onDeleted: () {
+                setState(() => _ingredientList.remove(ing));
+              },
+            );
+          }).toList(),
+        ),
+
+        const SizedBox(height: 8),
+
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _ingredientInputController,
+                decoration: InputDecoration(
+                  hintText: 'Ajouter un ingrédient',
+                  prefixIcon: const Icon(
+                    Icons.add,
+                    color: Color(0xFF7C3AED),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF7C3AED),
+                      width: 2,
+                    ),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                ),
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (_) => _handleAddIngredient(),
+              ),
+            ),
+
+            const SizedBox(width: 8),
+
+            ElevatedButton(
+              onPressed: _handleAddIngredient,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF7C3AED),
+              ),
+              child: const Icon(
+                Icons.add,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  void _handleAddIngredient() {
+    final text = _ingredientInputController.text.trim();
+
+    if (text.isEmpty) return;
+
+    final parts = text.split(' - ');
+
+    Ingredient newIng;
+
+    if (parts.length >= 3) {
+      newIng = Ingredient(
+        name: parts[0].trim(),
+        quantity: parts[1].trim(),
+        unit: parts[2].trim(),
+      );
+    } else {
+      newIng = Ingredient(
+        name: text,
+        quantity: '1',
+        unit: 'unité',
+      );
+    }
+
+    setState(() {
+      _ingredientList.add(newIng);
+      _ingredientInputController.clear();
+    });
+  }
+
   Widget _buildCategoryDropdown() {
     return DropdownButtonFormField<RecipeCategory>(
       value: _selectedCategory,
       decoration: InputDecoration(
         labelText: 'Catégorie',
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
         filled: true,
         fillColor: Colors.grey[50],
       ),
-      items: RecipeCategory.values
-          .map(
-            (category) =>
-                DropdownMenuItem(value: category, child: Text(category.label)),
-          )
-          .toList(),
+      items: RecipeCategory.values.map((category) {
+        return DropdownMenuItem(
+          value: category,
+          child: Text(category.label),
+        );
+      }).toList(),
       onChanged: (value) {
         if (value != null) {
           setState(() => _selectedCategory = value);
@@ -226,18 +366,18 @@ class _AddRecipePageState extends State<AddRecipePage> {
       value: _selectedDifficulty,
       decoration: InputDecoration(
         labelText: 'Difficulté',
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
         filled: true,
         fillColor: Colors.grey[50],
       ),
-      items: RecipeDifficulty.values
-          .map(
-            (difficulty) => DropdownMenuItem(
-              value: difficulty,
-              child: Text(difficulty.label),
-            ),
-          )
-          .toList(),
+      items: RecipeDifficulty.values.map((difficulty) {
+        return DropdownMenuItem(
+          value: difficulty,
+          child: Text(difficulty.label),
+        );
+      }).toList(),
       onChanged: (value) {
         if (value != null) {
           setState(() => _selectedDifficulty = value);
@@ -251,21 +391,29 @@ class _AddRecipePageState extends State<AddRecipePage> {
       children: [
         Expanded(
           child: OutlinedButton(
-            onPressed: _isLoading ? null : () => Navigator.pop(context),
+            onPressed: _isLoading
+                ? null
+                : () => Navigator.pop(context),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 12),
-              side: const BorderSide(color: Color(0xFF7C3AED)),
+              side: const BorderSide(
+                color: Color(0xFF7C3AED),
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
             child: const Text(
               'Annuler',
-              style: TextStyle(color: Color(0xFF7C3AED)),
+              style: TextStyle(
+                color: Color(0xFF7C3AED),
+              ),
             ),
           ),
         ),
+
         const SizedBox(width: 12),
+
         Expanded(
           child: ElevatedButton(
             onPressed: _isLoading ? null : _saveRecipe,
@@ -283,7 +431,10 @@ class _AddRecipePageState extends State<AddRecipePage> {
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(
+                        Colors.white,
+                      ),
                       strokeWidth: 2,
                     ),
                   )
@@ -305,25 +456,28 @@ class _AddRecipePageState extends State<AddRecipePage> {
       setState(() => _isLoading = true);
 
       try {
-        final ingredients = _ingredientsController.text
-            .split('\n')
-            .where((e) => e.isNotEmpty)
-            .map((line) {
-              final parts = line.split(' - ');
-              if (parts.length >= 3) {
-                return Ingredient(
-                  name: parts[0].trim(),
-                  quantity: parts[1].trim(),
-                  unit: parts[2].trim(),
-                );
-              }
-              return Ingredient(
-                name: line.trim(),
-                quantity: '1',
-                unit: 'unité',
-              );
-            })
-            .toList();
+        final ingredients = _ingredientList.isNotEmpty
+            ? List<Ingredient>.from(_ingredientList)
+            : _ingredientsController.text
+                  .split('\n')
+                  .where((e) => e.isNotEmpty)
+                  .map((line) {
+                    final parts = line.split(' - ');
+
+                    if (parts.length >= 3) {
+                      return Ingredient(
+                        name: parts[0].trim(),
+                        quantity: parts[1].trim(),
+                        unit: parts[2].trim(),
+                      );
+                    }
+
+                    return Ingredient(
+                      name: line.trim(),
+                      quantity: '1',
+                      unit: 'unité',
+                    );
+                  }).toList();
 
         final instructions = _instructionsController.text
             .split('\n')
@@ -331,7 +485,6 @@ class _AddRecipePageState extends State<AddRecipePage> {
             .toList();
 
         if (_isEditing && widget.recipe != null) {
-          // Mode édition
           final updatedRecipe = Recipe(
             id: widget.recipe!.id,
             userId: widget.recipe!.userId,
@@ -343,13 +496,16 @@ class _AddRecipePageState extends State<AddRecipePage> {
             instructions: instructions,
             category: _selectedCategory,
             difficulty: _selectedDifficulty,
-            isFavorite: widget.recipe?.isFavorite ?? false,
+            isFavorite:
+                widget.recipe?.isFavorite ?? false,
           );
 
-          await context.read<RecipeProvider>().updateRecipe(
-            widget.recipe!.id,
-            updatedRecipe,
-          );
+          await context
+              .read<RecipeProvider>()
+              .updateRecipe(
+                widget.recipe!.id,
+                updatedRecipe,
+              );
 
           if (mounted) {
             setState(() => _isLoading = false);
@@ -358,7 +514,10 @@ class _AddRecipePageState extends State<AddRecipePage> {
               SnackBar(
                 content: Row(
                   children: const [
-                    Icon(Icons.check_circle, color: Colors.white),
+                    Icon(
+                      Icons.check_circle,
+                      color: Colors.white,
+                    ),
                     SizedBox(width: 12),
                     Expanded(
                       child: Text(
@@ -372,17 +531,14 @@ class _AddRecipePageState extends State<AddRecipePage> {
                   ],
                 ),
                 backgroundColor: Colors.blue,
-                duration: const Duration(seconds: 2),
               ),
             );
 
-            await Future.delayed(const Duration(milliseconds: 300));
-            if (mounted) Navigator.pop(context);
+            Navigator.pop(context);
           }
         } else {
-          // Mode création
           final recipe = Recipe(
-            userId: '', // Le provider remplacera avec le vrai userId
+            userId: '',
             name: _nameController.text,
             description: _descriptionController.text,
             preparationTime: int.parse(_timeController.text),
@@ -393,7 +549,9 @@ class _AddRecipePageState extends State<AddRecipePage> {
             difficulty: _selectedDifficulty,
           );
 
-          await context.read<RecipeProvider>().addRecipe(recipe);
+          await context
+              .read<RecipeProvider>()
+              .addRecipe(recipe);
 
           if (mounted) {
             setState(() => _isLoading = false);
@@ -402,7 +560,10 @@ class _AddRecipePageState extends State<AddRecipePage> {
               SnackBar(
                 content: Row(
                   children: const [
-                    Icon(Icons.check_circle, color: Colors.white),
+                    Icon(
+                      Icons.check_circle,
+                      color: Colors.white,
+                    ),
                     SizedBox(width: 12),
                     Expanded(
                       child: Text(
@@ -416,12 +577,10 @@ class _AddRecipePageState extends State<AddRecipePage> {
                   ],
                 ),
                 backgroundColor: Colors.green,
-                duration: const Duration(seconds: 2),
               ),
             );
 
-            await Future.delayed(const Duration(milliseconds: 300));
-            if (mounted) Navigator.pop(context);
+            Navigator.pop(context);
           }
         }
       } catch (e) {
@@ -432,7 +591,10 @@ class _AddRecipePageState extends State<AddRecipePage> {
             SnackBar(
               content: Row(
                 children: [
-                  const Icon(Icons.error_outline, color: Colors.white),
+                  const Icon(
+                    Icons.error_outline,
+                    color: Colors.white,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -446,7 +608,6 @@ class _AddRecipePageState extends State<AddRecipePage> {
                 ],
               ),
               backgroundColor: Colors.red,
-              duration: const Duration(seconds: 3),
             ),
           );
         }
