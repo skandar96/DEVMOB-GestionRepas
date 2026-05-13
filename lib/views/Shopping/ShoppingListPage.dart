@@ -171,6 +171,9 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
       final previousItems = List<ShoppingItem>.from(
         shoppingProvider.shoppingItems,
       );
+      final manualItems = previousItems
+          .where((item) => item.mealType == null)
+          .toList();
       final ingredientsWithMealType = <Map<String, dynamic>>[];
 
       for (final mealPlan in mealPlans) {
@@ -203,15 +206,19 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
 
       await shoppingProvider.clearAllItems();
 
-      if (ingredientsWithMealType.isNotEmpty) {
-        final shoppingItems =
-            ShoppingListGenerator.generateFromIngredientsWithMealType(
+      final generatedMealItems = ingredientsWithMealType.isNotEmpty
+          ? ShoppingListGenerator.generateFromIngredientsWithMealType(
               ingredientsWithMealType,
               authProvider.user!.id!,
               categoryMapper: ShoppingListGenerator.categorizeIngredient,
               existingItems: previousItems,
-            );
-        await shoppingProvider.addMultipleItems(shoppingItems);
+            )
+          : <ShoppingItem>[];
+
+      final itemsToPersist = [...generatedMealItems, ...manualItems];
+
+      if (itemsToPersist.isNotEmpty) {
+        await shoppingProvider.addMultipleItems(itemsToPersist);
       }
 
       _lastSyncSignature = signature;
@@ -280,17 +287,24 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
     await shoppingProvider.deleteItem(item.id);
   }
 
-  Map<int, List<ShoppingItem>> _getGroupedItemsByMealType(
+  Map<String, List<ShoppingItem>> _getGroupedItemsByMealType(
     List<ShoppingItem> items,
   ) {
-    final grouped = <int, List<ShoppingItem>>{};
+    final grouped = <String, List<ShoppingItem>>{};
     for (final item in items) {
-      final mealType = item.mealType ?? 1; // Par défaut Déjeuner
-      grouped.putIfAbsent(mealType, () => []);
-      grouped[mealType]!.add(item);
+      final groupKey = item.mealType == null
+          ? 'manual'
+          : item.mealType.toString();
+      grouped.putIfAbsent(groupKey, () => []);
+      grouped[groupKey]!.add(item);
     }
-    // Trier par mealType (0 = Petit déj, 1 = Déj, 2 = Dîner)
-    final sortedKeys = grouped.keys.toList()..sort();
+    // Trier par mealType (0 = Petit déj, 1 = Déj, 2 = Dîner, manuel en dernier)
+    final sortedKeys = grouped.keys.toList()
+      ..sort((a, b) {
+        if (a == 'manual') return 1;
+        if (b == 'manual') return -1;
+        return int.parse(a).compareTo(int.parse(b));
+      });
     return Map.fromEntries(
       sortedKeys.map((key) => MapEntry(key, grouped[key]!)),
     );
@@ -438,7 +452,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
                       final entry = groupedByMealType.entries.elementAt(index);
                       final mealType = entry.key;
                       final items = entry.value;
-                      final mealTypeData = _getMealTypeData(mealType);
+                      final mealTypeData = _getGroupData(mealType);
 
                       return _buildMealTypeCard(
                         mealType: mealType,
@@ -515,7 +529,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
   }
 
   Widget _buildMealTypeCard({
-    required int mealType,
+    required String mealType,
     required List<ShoppingItem> items,
     required Color color,
     required LinearGradient gradient,
@@ -877,9 +891,9 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
     );
   }
 
-  Map<String, dynamic> _getMealTypeData(int mealType) {
+  Map<String, dynamic> _getGroupData(String mealType) {
     switch (mealType) {
-      case 0: // Petit Déjeuner
+      case '0': // Petit Déjeuner
         return {
           'label': 'Petit déjeuner ☀️',
           'color': const Color(0xFFF59E0B),
@@ -892,7 +906,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
             ],
           ),
         };
-      case 1: // Déjeuner
+      case '1': // Déjeuner
         return {
           'label': 'Déjeuner 🍽️',
           'color': const Color(0xFF06B6D4),
@@ -905,7 +919,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
             ],
           ),
         };
-      case 2: // Dîner
+      case '2': // Dîner
         return {
           'label': 'Dîner 🌙',
           'color': const Color(0xFF8B5CF6),
@@ -916,6 +930,16 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
               Color(0xA78B5CF6), // Indigo
               Color(0xFF7C3AED), // Violet
             ],
+          ),
+        };
+      case 'manual':
+        return {
+          'label': 'Achats manuels 🛍️',
+          'color': const Color(0xFF10B981),
+          'gradient': const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF6EE7B7), Color(0xFF10B981)],
           ),
         };
       default:

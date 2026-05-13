@@ -17,44 +17,11 @@ class MealCalendarPage extends StatefulWidget {
 
 class _MealCalendarPageState extends State<MealCalendarPage> {
   late DateTime _selectedDate;
-  String? _initializedUserId;
 
   @override
   void initState() {
     super.initState();
     _selectedDate = DateTime.now();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    final authProvider = context.read<AuthProvider>();
-    final userId = authProvider.user?.id;
-
-    if (userId != null && userId.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _initializeForUser(userId);
-      });
-    } else if (_initializedUserId != null) {
-      _initializedUserId = null;
-    }
-  }
-
-  Future<void> _initializeForUser(String userId) async {
-    if (!mounted || _initializedUserId == userId) {
-      return;
-    }
-
-    _initializedUserId = userId;
-
-    final mealPlanProvider = context.read<MealPlanProvider>();
-    final recipeProvider = context.read<RecipeProvider>();
-
-    mealPlanProvider.setWeekStart(_selectedDate);
-    await mealPlanProvider.fetchMealPlansForWeek(userId);
-    recipeProvider.setUserId(userId);
-    await recipeProvider.loadRecipes();
   }
 
   String _getMonthYear() {

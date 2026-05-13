@@ -396,10 +396,10 @@ class _AssignRecipePageState extends State<AssignRecipePage> {
           debugPrint('Erreur sync courses après update meal: $e');
         }
         if (!mounted) return;
-        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Repas modifié avec succès')),
         );
+        Navigator.pop(context);
       }
     } else {
       // Create new meal plan
@@ -465,9 +465,6 @@ class _AssignRecipePageState extends State<AssignRecipePage> {
         }
         if (!mounted) return;
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Repas ajouté avec succès')),
-        );
       }
     }
   }

@@ -32,7 +32,6 @@ class AuthService {
         password: password,
       );
       fb.User? fbUser = result.user;
-
       if (fbUser != null) {
         return User(id: fbUser.uid, email: fbUser.email!, password: password);
       }

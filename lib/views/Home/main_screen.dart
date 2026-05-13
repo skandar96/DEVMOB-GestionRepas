@@ -6,6 +6,7 @@ import '../Recipe/RecipeListPage.dart';
 import '../Mealplan/MealCalendarPage.dart';
 import '../Shopping/ShoppingListPage.dart';
 import '../../providers/RecipeProvider.dart';
+import '../../providers/meal_plan_provider.dart';
 import '../../providers/auth_provider.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -24,11 +25,15 @@ class MainNavigationState extends State<MainNavigation> {
   void initState() {
     super.initState();
     _selectedIndex = widget.initialIndex;
-    // Initialiser l'userId du RecipeProvider après le premier build
+    // Initialiser les données utilisateur après le premier build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProvider = context.read<AuthProvider>();
       if (authProvider.user != null && authProvider.user!.id != null) {
-        context.read<RecipeProvider>().setUserId(authProvider.user!.id!);
+        final userId = authProvider.user!.id!;
+        context.read<RecipeProvider>().setUserId(userId);
+        context.read<MealPlanProvider>().setWeekStart(DateTime.now());
+        context.read<MealPlanProvider>().fetchMealPlansForWeek(userId);
+        context.read<RecipeProvider>().loadRecipes();
       }
     });
   }
