@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../widgets/TextFieldUI.dart';
 import '/../controllers/auth_controller.dart';
 import '/../providers/auth_provider.dart';
+import '/../providers/ShoppingListProvider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -163,10 +164,26 @@ class _LoginScreenState extends State<LoginScreen> {
                                     );
 
                                     if (authProvider.isLoggedIn) {
-                                      Navigator.pushReplacementNamed(
-                                        context,
-                                        '/home',
-                                      );
+                                      // Load shopping list after successful login
+                                      if (context.mounted) {
+                                        final shoppingProvider =
+                                            Provider.of<ShoppingListProvider>(
+                                              context,
+                                              listen: false,
+                                            );
+                                        shoppingProvider.setUserId(
+                                          authProvider.user!.id!,
+                                        );
+                                        await shoppingProvider
+                                            .loadShoppingItems();
+                                      }
+
+                                      if (context.mounted) {
+                                        Navigator.pushReplacementNamed(
+                                          context,
+                                          '/home',
+                                        );
+                                      }
                                     } else if (authProvider.error.isNotEmpty) {
                                       ScaffoldMessenger.of(
                                         context,
@@ -192,7 +209,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 borderRadius: BorderRadius.circular(25),
                                 gradient: const LinearGradient(
                                   colors: [
-                                    Color(0xFF5D38FF), Color(0xFFEE1289),
+                                    Color(0xFF5D38FF),
+                                    Color(0xFFEE1289),
                                   ],
                                 ),
                               ),
