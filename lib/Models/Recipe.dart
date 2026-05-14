@@ -55,7 +55,6 @@ class Recipe {
   final RecipeCategory category;
   final RecipeDifficulty difficulty;
   final bool isFavorite;
-  final String? imageUrl;
 
   Recipe({
     String? id,
@@ -69,7 +68,6 @@ class Recipe {
     this.category = RecipeCategory.dejeuner,
     this.difficulty = RecipeDifficulty.moyen,
     this.isFavorite = false,
-    this.imageUrl,
   }) : id = id ?? const Uuid().v4();
 
   Map<String, dynamic> toMap() {
@@ -85,7 +83,6 @@ class Recipe {
       'category': category.index,
       'difficulty': difficulty.index,
       'isFavorite': isFavorite,
-      'imageUrl': imageUrl,
     };
   }
 
@@ -106,7 +103,6 @@ class Recipe {
       category: RecipeCategory.values[map['category'] ?? 1],
       difficulty: RecipeDifficulty.values[map['difficulty'] ?? 1],
       isFavorite: map['isFavorite'] ?? false,
-      imageUrl: map['imageUrl'],
     );
   }
 
@@ -122,7 +118,6 @@ class Recipe {
     RecipeCategory? category,
     RecipeDifficulty? difficulty,
     bool? isFavorite,
-    String? imageUrl,
   }) {
     return Recipe(
       id: id ?? this.id,
@@ -136,7 +131,6 @@ class Recipe {
       category: category ?? this.category,
       difficulty: difficulty ?? this.difficulty,
       isFavorite: isFavorite ?? this.isFavorite,
-      imageUrl: imageUrl ?? this.imageUrl,
     );
   }
 }

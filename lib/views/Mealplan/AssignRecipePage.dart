@@ -141,7 +141,6 @@ class _AssignRecipePageState extends State<AssignRecipePage> {
                               ),
                               child: Row(
                                 children: [
-                                  // Recipe image or icon
                                   Container(
                                     width: 60,
                                     height: 60,
@@ -149,19 +148,13 @@ class _AssignRecipePageState extends State<AssignRecipePage> {
                                       color: Colors.grey[200],
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: recipe.imageUrl != null
-                                        ? Image.network(
-                                            recipe.imageUrl!,
-                                            fit: BoxFit.cover,
-                                          )
-                                        : Icon(
-                                            Icons.restaurant,
-                                            color: Colors.grey[400],
-                                          ),
+                                    child: Icon(
+                                      Icons.restaurant,
+                                      color: Colors.grey[400],
+                                    ),
                                   ),
                                   const SizedBox(width: 12),
 
-                                  // Recipe info
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:

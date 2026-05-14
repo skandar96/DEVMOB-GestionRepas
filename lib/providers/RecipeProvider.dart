@@ -65,7 +65,6 @@ class RecipeProvider with ChangeNotifier {
         category: recipe.category,
         difficulty: recipe.difficulty,
         isFavorite: recipe.isFavorite,
-        imageUrl: recipe.imageUrl,
       );
       await _recipeService.addRecipe(_userId, recipeWithUser);
       _recipes.add(recipeWithUser);
@@ -99,7 +98,6 @@ class RecipeProvider with ChangeNotifier {
         category: updatedRecipe.category,
         difficulty: updatedRecipe.difficulty,
         isFavorite: updatedRecipe.isFavorite,
-        imageUrl: updatedRecipe.imageUrl,
       );
       await _recipeService.updateRecipe(_userId, id, recipeWithUser);
       int index = _recipes.indexWhere((recipe) => recipe.id == id);
